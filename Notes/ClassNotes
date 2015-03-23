@@ -1,0 +1,289 @@
+SYMBOL TABLE -- the integral part of any source code compiler.
+
+	PIPELINE:
+		-> lexer -> parser -> semantic checker -> code generator ->
+		
+		The symbol table sits outside this pipeline and can communicate with all parts.
+		It acts as a dictionary for identifier found while parsing the code.
+		In addition to storing IDs, the symbol table also keeps track of the scope.
+		
+		There are two kinds of IDs in this project: types and variables.
+
+
+INTERMEDIATE ACTIONS in BISON
+
+	Most of the time, actions are performed when tokens are read. But not always!
+	
+	Example grammar:
+	
+	compound_statement:
+		'{' decls stmt_sequence '}' 
+			---- in C/C++, these blocks have their own scope, so we want to perform an action immediately when { is read. We also want to exit the scope as soon as } is read (which will normally be default action, though). This is where intermediate actions come in.
+	
+	Intermediate action example:
+	
+	t1 {action1} t2 {action2} {action3} t3 t4 {action3}
+		---- action1 will be able to understand $1 (corresp. to t1). Keep in mind that each action block will get its own $ index, so action1 will get $2, action2 will get $4, etc.
+		
+		---- assigning to $$ in an intermediate action sets its semantic value. E.g., if in action1 we state $$ = function($1), then later references to $2 will contain the value of function($1). Only the final action, action3 here, can access the parent with $$.
+		
+			More clearly, $$ in action1 sets the $2 value; $$ in action3 sets the parent's semantic value.
+	
+	What Bison Does
+		Bison actual converts an intermediate action into a new nonterminal with an empty production as…
+		
+		parent:
+			t1 {a1;} t2 {a2;}
+			
+		…converts to…
+		
+		parent:
+			t1 $@1 t2 {a2;}
+			
+		$@1:
+			/* empty */ {a1';}  // where any $# references are managed by BISON to reference to the original reference in the intermediate action.
+	
+	
+	WARNING: Conflicts can arise!
+	
+	Example C production:
+		comp_stmt           @
+			: {action;} '{'   decls stmt_list '}'
+			|           '{'   stmt_list '}'
+			;
+		
+		If you were to put a production as above then BISON will complain about conflicts, since it doesn’t have enough information at that time to differentiate a '{' from the first or the second production.
+		
+		A fix only specific to this example would be to put that intermediate in the space below the @ instead, since C idiosyncrasies make decls and stmt_list have different initials.
+		
+		If such a unique fix is not available, you could try placing the intermediate in both places, but this may not work anyway because BISON will still consider the actions to be separate.
+		
+		Final solution is to force BISON to treat actions equally as…
+		
+		comp_stmt
+			: '{' perform_action decls stmt_list '}'
+			| '{' perform_action stmt_list '}'
+			;
+		
+		perform_action
+			: /* empty */ {action;}
+			;
+		
+		But now, what if action refers to, say $1, which used to refer to the '{' token? Luckily, the semantic stack still holds the stack entry for '{', which is now on the top of said stack when the scope production is entered, so use a $ with an index less than 1 to access the stack. $0 is the item at the top of the stack, $-1 is the item below $0, etc.
+		
+		But what is the type of $0? BISON doesn't know immediately what the type of $0 is.
+		Use explicit typing as $<y_tree>0, which will force $0 to have type <y_tree>.
+		
+		
+----------------
+PROJECT:
+
+	Write a compiler using BISON, FLEX, and C for a large subset of Pascal.
+	
+	Example Pascal program:
+	
+	program myProgram; (* Program Heading *)
+	
+	(* Declarations sections *)
+	
+	begin
+		(* Statements *)
+	end.(* Period ends the program *)
+	
+	Project 1 worries only about the declarations section, which has a defined set of subsections:
+	
+		1. Constants (const) --- we won't need to implement this section.
+		2. Type defs (type)
+		3. Globals (var)
+		4. Function decls (function) and procedure decls (procedure)
+	
+	
+	Example declaration:
+	
+	Const (* We WONT implement this section in project. *)
+		DAYS_PER_WEEK = 7;
+		MAX_SCORE = 100;
+		…
+	
+	type
+		MyListOfDays = array[1..7] of Real;
+		IntPtr = ^Integer; (* ^ is the pointer operator (like * in C) *)
+		SetOfDays = array[1..7] of Boolean;
+		CharList = array[1..100] of Char;
+	
+	var
+		x, y, z : Integer;
+		a : Real;
+		p : IntPtr;
+		bs : array[0..10] of Char;
+	
+	function fact(n:Integer) : Integer;
+	
+	procedure MakeDict( … );
+	
+	begin
+		(* statements *)
+	end.
+	
+--------
+Project I -- handles type and var declarations ONLY.
+
+type
+	<new identifier> = <type denoter>;
+
+	Immediately when an identifier is read, it must be enrolled (added to) the symbol table using the function st_enter_id(char*), which returns ST_ID, which is a pointer to a symbol table record, or "enrollment papers."
+	
+	Enrollment
+		-- used to ensure that equal identifier actually produce the exact same record.
+	
+	Installation
+		-- used when an identifier gets data and returns a symbol table data record (ST_DR). This is done through a call to st_install().
+		
+	Example,
+		type
+			IntArray = array[1..10] of Integer;
+		  |-ST_ID-| |--------- TYPE --------|
+		
+		
+		Enroll IntArray to get a corresponding ST_ID, then install the ST_ID into the symbol table as a TYPENAME with the corresponding TYPE.
+		
+		Allocate a new ST_DR using st_stdr_alloc(), fill in the appropriate fields, and install the record with st_install().
+
+WARNING:
+	Pascal allows forward references, so the following is perfectly legal:
+	
+	Foo = ^Bar;
+	Bar = ^Foo;
+	
+
+You then resolve all unresolved pointers at the end of the type declaration section.
+
+--------
+Modules available for the Project
+
+	Symbol Table
+		-- Allows you to store and retrieve information about user-defined identifiers.
+		-- symtab.h provides the documentation for the following functions:
+		
+		st_enter_id() -- enroll an ID and/or retrieve ST_ID.
+		st_lookup() -- returns ST_DR of ID in symbol table, returning null if none found.
+		st_install() -- installs an ID with a data record into the symbol table.
+		st_get_id_str() -- returns the raw ID string for the provided ST_ID.
+		st_get_cur_block() -- returns the current block number.
+		stdr_alloc() -- allocates a new, uninitialized ST_DR.
+	
+	Types
+		-- Used to build and analyze structures that support the Pascal types.
+		
+		ty_build_... -- family of type-structure-building functions, including…
+			ty_build_array()
+			ty_build_ptr()
+			ty_build_func()
+			ty_build_basic(TYPETAG)
+			ty_build_unresolved_ptr() -- used to allocate an unresolved type identifier.
+		
+		C equivalents of Pascal types:
+			Integer → long int
+			Char → unsigned char
+			Boolean → char
+			Real → double
+			Single → float
+		
+		Type tags:
+			TYSIGNEDLONGINT (Integer)
+			TYPTR
+			TYARRAY
+			TYUNSIGNEDCHAR (Char)
+			TYSIGNEDCHAR (Boolean)
+			TYFUNC
+			TYVOID
+			TYSUBRANGE -- denotes the subrange used to define an array
+			TYERROR -- used to pass error messages
+			etc…
+		
+		struct TYPE
+		{
+			TYPETAG typetag;
+			
+			/* various type-specific structures. An array, for example, has… */
+			TYPE* list_of_index_types;
+			TYPE element_type;
+		}
+		
+			**A Pascal array is similar to a Lua table or Python dictionary in that it can be indexed by almost any basic type.
+		
+		Analyzing types:
+		
+			Some type combinations are not legal, for example, you cannot have an array of functions. You can, however, have arrays of function pointers.
+			
+			ty_query(TYPE) → returns the TYPETAG of the given type. Depending on this TYPETAG (inside a switch, maybe), you can perform additional queries to get more details, such as…
+			
+				ty_query_array()
+				ty_query_ptr()
+				ty_query_func()
+	
+	
+	Back End
+	
+		Used to output x86 assembly language instructions. This enables to make your compiler's logic architecture independent.
+		
+		Perform back end operations only when the input is error-free. For project 1, there are only two functions here to concern ourselves with:
+		
+			b_global_decl(raw_id, align, size) -- declares, but not allocate, an identifier as global.
+			b_skip(size) -- used to dynamically allocate size bytes for a variable.
+		
+		Alignments & Size:
+		
+		Type	Alignment	Size
+		Char	1	1
+		Boolean	1	1
+		Integer	4	4
+		Real	8	8
+		Single	4	4
+		Ptr	4	4
+		Array of T	alignment(T)	size(T) * (product of all index type ranges)
+		Function	N/A	N/A
+		Void	N/A	N/A
+		
+	
+	Messages
+	
+		Used for all types of output except assembly. All of these functions' parameters are the same as those of printf() with newline. Avoid directly calling s-/printf directly.
+		
+		error() -- prints out compiler errors.
+		warn() -- prints out warnings.
+		fatal() -- prints out fatal, non-recoverable errors.
+		msg(), msgn() -- prints out generic messages. msgn does not suffix with \n.
+		bug() -- prints out bugs in our compiler.
+		
+		
+		error -- semantic compiler error; there is a problem in source code that will prevent execution. No executable produced. Compilation should still continue to catch any other errors. This includes double declarations, unresolved type names.
+		
+		warn -- "something is probably wrong, but we can still execute."
+		
+		bug -- prints message with line numbers, then aborts. This is useful for debugging purposes. Example:
+		
+			if (value_not_expected)
+			{
+				bug("value is %d", value);
+			}
+
+
+
+Handling Unresolved Pointer Types:
+
+	type
+		a = Integer;  //1
+		ap = ^a;  //2
+		fp = ^foo; //3
+		…
+		foo = array[0..10] of ^bar; //4
+		bar = Real; //5
+		
+	Process:
+		1 -- install a as an Integer symbol using ty_build_basic(TYUNSIGNEDLONGINT).
+		2 -- even though a has been installed as an integer, install ap as and unresolved_ptr()!
+		3 -- install fp as an unresolved pointer.
+		etc…
+		
+		At the end of the type sections, go through and try to resolve all unresolved pointers in one go. Therefore, every time you build an unresolved pointer, you have to put the returned value of ty_build_unresolved_ptr() in a linked list of unresolved pointers (as a TYPE_LIST of TLIST_NODE). Use ty_resolve_ptr() to resolve these pointers.
