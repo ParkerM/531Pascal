@@ -109,7 +109,10 @@ void yyerror(const char *);
 %token LEX_LABEL_ADDR
 
 /* GPC internal tokens */
-%token LEX_INTCONST LEX_STRCONST LEX_REALCONST
+/* MODIFIED to introduce types. */
+%token <y_cint> LEX_INTCONST
+%token <y_string> LEX_STRCONST
+%token <y_real> LEX_REALCONST
 %token LEX_RANGE LEX_ELLIPSIS
 
 /* We don't declare precedences for operators etc. We don't need
@@ -166,70 +169,74 @@ id_list:
   | id_list ',' new_identifier
   ;
 
+/* $$ type should be TYPE. */
 typename:
-    LEX_ID
+    LEX_ID. { /* TODO: allocate basic type to $$ */ }
   ;
 
+/* $$ type should be ST_ID. */
 identifier:
-    LEX_ID
+    LEX_ID { /* enroll LEX_ID into symbol table. */ }
   ;
 
+/* $$ type should be ST_ID. */
 new_identifier:
-    new_identifier_1
+    new_identifier_1 { /* enroll new identifier into symbol table. */ }
   ;
 
+/* $$ type should be y_string. */
 new_identifier_1:
-    LEX_ID
+    LEX_ID   { $$ = $1; }
 /* Standard Pascal constants */
-  | p_MAXINT
-  | p_FALSE
-  | p_TRUE
+  | p_MAXINT {}
+  | p_FALSE  {}
+  | p_TRUE   {}
 /* Standard Pascal I/O */
-  | p_INPUT
-  | p_OUTPUT
-  | p_REWRITE
-  | p_RESET
-  | p_PUT
-  | p_GET
-  | p_WRITE
-  | p_READ
-  | p_WRITELN
-  | p_READLN
-  | p_PAGE
-  | p_EOF
-  | p_EOLN
+  | p_INPUT   {}
+  | p_OUTPUT  {}
+  | p_REWRITE {}
+  | p_RESET   {}
+  | p_PUT     {}
+  | p_GET     {}
+  | p_WRITE   {}
+  | p_READ    {}
+  | p_WRITELN {}
+  | p_READLN  {}
+  | p_PAGE    {}
+  | p_EOF     {}
+  | p_EOLN    {}
 /* Standard Pascal heap handling */
-  | p_NEW
-  | p_DISPOSE
+  | p_NEW     {}
+  | p_DISPOSE {}
 /* Standard Pascal arithmetic */
-  | p_ABS
-  | p_SQR
-  | p_SIN
-  | p_COS
-  | p_EXP
-  | p_LN
-  | p_SQRT
-  | p_ARCTAN
-  | p_TRUNC
-  | p_ROUND
+  | p_ABS    {}
+  | p_SQR    {}
+  | p_SIN    {}
+  | p_COS    {}
+  | p_EXP    {}
+  | p_LN     {}
+  | p_SQRT   {}
+  | p_ARCTAN {}
+  | p_TRUNC  {}
+  | p_ROUND  {}
 /* Standard Pascal transfer functions */
-  | p_PACK
-  | p_UNPACK
+  | p_PACK   {}
+  | p_UNPACK {}
 /* Standard Pascal ordinal functions */
-  | p_ORD
-  | p_CHR
-  | p_SUCC
-  | p_PRED
-  | p_ODD
+  | p_ORD  {}
+  | p_CHR  {}
+  | p_SUCC {}
+  | p_PRED {}
+  | p_ODD  {}
 /* Other extensions */
-  | BREAK
-  | CONTINUE
-  | RETURN_
-  | RESULT
-  | EXIT
-  | FAIL
-  | SIZEOF
-  | BITSIZEOF
+  | BREAK     {}
+  | CONTINUE  {}
+  | RETURN_   {}
+  | RESULT    {}
+  | EXIT      {}
+  | FAIL      {}
+  | SIZEOF    {}
+  | BITSIZEOF {}
   ;
 
 any_global_declaration_part:
@@ -306,51 +313,61 @@ string:
   | string LEX_STRCONST
   ;
 
+/* $$ type should be NONE */
 type_definition_part:
-    LEX_TYPE type_definition_list semi
+    LEX_TYPE type_definition_list semi         { process_typedefs($2); }
   ;
 
+/* $$ type should be TYPE_NODE* y_type_node_list */
 type_definition_list:
-    type_definition
-  | type_definition_list semi type_definition
+    type_definition                            { $$ = new_typedef_list($1); }
+  | type_definition_list semi type_definition  { $$ = append_typedef_to_list($1, $3); }
   ;
 
+/* $$ type should be TYPE_NODE y_type_node */
 type_definition:
-    new_identifier '=' type_denoter
+    new_identifier '=' type_denoter            { $$ = make_typedef_node($1, $3); }
   ;
 
+/* $$ type should be TYPE (y_type) */
 type_denoter:
-    typename
-  | new_ordinal_type
-  | new_pointer_type
-  | new_procedural_type
-  | new_structured_type
+    typename             { $$ = $1; }
+  | new_ordinal_type     { $$ = $1; }
+  | new_pointer_type     { $$ = $1; }
+  | new_procedural_type  { $$ = $1; }
+  | new_structured_type  { $$ = $1; }
   ;
 
+/* $$ type should be TYPE. */
 new_ordinal_type:
-    enumerated_type
-  | subrange_type
+    enumerated_type  { /* enumerations not required by project 1. */ }
+  | subrange_type    { $$ = $1; }
   ;
 
+/* IGNORE for project 1. */
 enumerated_type:
     '(' enum_list ')'
   ;
 
+/* IGNORE for project 1. */
 enum_list:
     enumerator
   | enum_list ',' enumerator
   ;
 
+/* IGNORE for project 1. */
 enumerator:
     new_identifier
   ;
 
+/* $$ type should be TYPE (y_TYPE). */
 subrange_type:
-    constant LEX_RANGE constant
+    constant LEX_RANGE constant  { /* make subrange using constants. */ }
   ;
 
+/* $$ type should be TYPE (y_TYPE). */
 new_pointer_type:
-    pointer_char pointer_domain_type
+    pointer_char pointer_domain_type  { /* make unresolved pointer type using y_TYPE of $3. */ } 
   ;
 
 pointer_char:
@@ -358,54 +375,62 @@ pointer_char:
   | '@'
   ;
 
+/* $$ type should be TYPE (y_TYPE). */
 pointer_domain_type:
-    new_identifier
-  | new_procedural_type
+    new_identifier      { /* somehow convert $1's ST_ID to $$'s type. */ }
+  | new_procedural_type { $$ = $1; }
   ;
 
+/* $$ type should be TYPE (y_TYPE). */
 new_procedural_type:
-    LEX_PROCEDURE optional_procedural_type_formal_parameter_list
-  | LEX_FUNCTION optional_procedural_type_formal_parameter_list functiontype
+    LEX_PROCEDURE optional_procedural_type_formal_parameter_list             { /* create new procedure type with param list. */ }
+  | LEX_FUNCTION optional_procedural_type_formal_parameter_list functiontype { /* create new functiontype-returning function type with param list. */ }
   ;
 
+/* $$ type should be PARAM_LIST. */
 optional_procedural_type_formal_parameter_list:
-    /* empty */
-  | '(' procedural_type_formal_parameter_list ')'
+    /* empty */ { $$ = null; }
+  | '(' procedural_type_formal_parameter_list ')' { $$ = $2; }
   ;
 
+/* $$ type should be PARAM_LIST. */
 procedural_type_formal_parameter_list:
-    procedural_type_formal_parameter
-  | procedural_type_formal_parameter_list semi procedural_type_formal_parameter
+    procedural_type_formal_parameter                                             { $$ = $1; }
+  | procedural_type_formal_parameter_list semi procedural_type_formal_parameter  { $$ = merge_param_lists($1, $3); } 
   ;
 
+/* $$ type should be PARAM_LIST. */
 procedural_type_formal_parameter:
-    id_list
-  | id_list ':' typename
-  | LEX_VAR id_list ':' typename
-  | LEX_VAR id_list
+    id_list                      { /* construct PARAM_LIST using each of id_list as pass-by-value. */ }
+  | id_list ':' typename         { /* construct PARAM_LIST using each of id_list as pass-by-value. */ }
+  | LEX_VAR id_list ':' typename { /* construct PARAM_LIST using each of id_list as pass-by-reference. */ }
+  | LEX_VAR id_list              { /* construct PARAM_LIST using each of id_list as pass-by-reference. */ }
   ;
 
+/* $$ type should be TYPE (y_TYPE). */
 new_structured_type:
-    array_type
-  | set_type
-  | record_type
+    array_type  { $$ = $1; }
+  | set_type    { /* IGNORE for project 1. */ }
+  | record_type { /* IGNORE for project 1. */ }
   ;
 
 /* Array */
 
+/* $$ type should be TYPE (y_TYPE). */
 array_type:
-    LEX_ARRAY '[' array_index_list ']' LEX_OF type_denoter
+    LEX_ARRAY '[' array_index_list ']' LEX_OF type_denoter { /* create new array type using $2 and $4. */ }
   ;
 
+/* $$ type should be TYPE_LIST. */
 array_index_list:
-    ordinal_index_type
-  | array_index_list ',' ordinal_index_type
+    ordinal_index_type                       { $$ = make_new_type_list($1); }
+  | array_index_list ',' ordinal_index_type  { $$ = append_to_type_list($1, $3); }
   ;
 
-
+/* $$ type should be TYPE (y_type). */
 ordinal_index_type:
-    new_ordinal_type
-  | typename
+    new_ordinal_type  { $$ = $1; }
+  | typename          { $$ = $1; }
   ;
 
 
