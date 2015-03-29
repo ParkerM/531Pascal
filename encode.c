@@ -21,6 +21,7 @@ void encode(ST_ID id)
     break;
     
     default:
+      bug("Unknown type: %d", record->tag);
     break;
   }
 }
@@ -69,6 +70,7 @@ int get_type_size(TYPE type)
     break;
     
     default:
+      return 0;
     break;
   }
 }
@@ -108,6 +110,7 @@ int get_type_alignment(TYPE type)
     break;
     
     default:
+      return 0;
     break;
   }
 }
