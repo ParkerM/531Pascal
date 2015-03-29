@@ -49,6 +49,8 @@
 /* Cause the `yydebug' variable to be defined.  */
 #define YYDEBUG 1
 
+#include "tree.h"
+
 void set_yydebug(int);
 void yyerror(const char *);
 
@@ -62,10 +64,13 @@ void yyerror(const char *);
 
 /* The union representing a semantic stack entry */
 %union {
-    char *   y_string;
-    int	     y_cint;
-    long     y_int;
-    double   y_real;
+    char *          y_string;
+    int	            y_cint;
+    long            y_int;
+    double          y_real;
+    
+    stid_item_p     y_stid_item;
+    ST_ID           y_stid;
 }
 
 %token <y_string> LEX_ID
@@ -131,6 +136,10 @@ void yyerror(const char *);
 %token p_ARG p_CARD p_EMPTY p_POSITION p_LASTPOSITION p_LENGTH p_TRIM p_BINDING
 %token p_DATE p_TIME LEX_RENAME LEX_IMPORT LEX_USES LEX_QUALIFIED LEX_ONLY
 
+%type <y_stid>      identifier new_identifier
+%type <y_string>    new_identifier_1
+%type <y_stid_item> id_list
+
 /* Precedence rules */
 
 /* The following precedence declarations are just to avoid the dangling
@@ -164,9 +173,10 @@ optional_par_id_list:
   | '(' id_list ')'
   ;
 
+/* $$ type should be ST_ID list. */
 id_list:
-    new_identifier
-  | id_list ',' new_identifier
+    new_identifier              { $$ = new_stid_list($1); }
+  | id_list ',' new_identifier  { $$ = append_to_stid_list($1, $3); }
   ;
 
 /* $$ type should be TYPE. */
