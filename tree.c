@@ -15,7 +15,7 @@
  
  #include "tree.h"
  
- stid_item_p new_stid_list(ST_ID root)
+ stid_list new_stid_list(ST_ID root)
  {
     // Allocate a new stid_item_p value.
     stid_item_p value = (stid_item_p) malloc(sizeof(STID_ITEM));
@@ -27,7 +27,7 @@
     return value;
  }
  
- stid_list append_to_stid_list(stid_list base, ST_ID new_id)
+ void append_stid_to_list(stid_list base, ST_ID new_id)
  {
     // Allocate a new stid_item_p item.
     stid_item_p newItem = (stid_item_p) malloc(sizeof(STID_ITEM));
@@ -47,7 +47,25 @@
     // Append the newItem to the end of the list.
     currentItem.next = newItem;
     
-    // Return the list again.
-    return base;
-    
  }
+ 
+ typedef_item_p make_typedef_node(ST_ID id, TYPE t)
+ {
+    typedef_item_p new_typedef = (typedef_item_p) malloc(sizeof(TYPEDEF_ITEM));
+    
+    new_typedef.next = NULL;
+    new_typedef.new_def = id;
+    new_typedef.old_type = t;
+ }
+ 
+void append_typedef_to_list(typedef_list base, typedef_item_p newItem)
+{
+    typedef_item_p current = base;
+    
+    while (current.next)
+    {
+        current = current.next;
+    }
+    
+    current.next = newItem;
+}

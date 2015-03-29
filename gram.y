@@ -71,6 +71,9 @@ void yyerror(const char *);
     
     stid_item_p     y_stid_item;
     ST_ID           y_stid;
+    
+    typedef_item_p  y_typedef_item;
+    TYPE            y_type;
 }
 
 %token <y_string> LEX_ID
@@ -140,6 +143,8 @@ void yyerror(const char *);
 %type <y_string>    new_identifier_1
 %type <y_stid_item> id_list
 
+%type <y_typedef_item> type_definition_list type_definition
+
 /* Precedence rules */
 
 /* The following precedence declarations are just to avoid the dangling
@@ -176,7 +181,7 @@ optional_par_id_list:
 /* $$ type should be ST_ID list. */
 id_list:
     new_identifier              { $$ = new_stid_list($1); }
-  | id_list ',' new_identifier  { $$ = append_to_stid_list($1, $3); }
+  | id_list ',' new_identifier  { append_stid_to_list($1, $3); $$ = $1; }
   ;
 
 /* $$ type should be TYPE. */
@@ -186,12 +191,12 @@ typename:
 
 /* $$ type should be ST_ID. */
 identifier:
-    LEX_ID { /* enroll LEX_ID into symbol table. */ }
+    LEX_ID { $$ = stdr_enter_id($1); }
   ;
 
 /* $$ type should be ST_ID. */
 new_identifier:
-    new_identifier_1 { /* enroll new identifier into symbol table. */ }
+    new_identifier_1 { $$ = stdr_enter_id($1); }
   ;
 
 /* $$ type should be y_string. */
@@ -328,13 +333,13 @@ type_definition_part:
     LEX_TYPE type_definition_list semi         { process_typedefs($2); }
   ;
 
-/* $$ type should be TYPE_NODE* y_type_node_list */
+/* $$ type should be typedef_list (y_typedef_item = typedef_list) */
 type_definition_list:
-    type_definition                            { $$ = new_typedef_list($1); }
-  | type_definition_list semi type_definition  { $$ = append_typedef_to_list($1, $3); }
+    type_definition                            { $$ = $1; }
+  | type_definition_list semi type_definition  { append_typedef_to_list($1, $3); $$ = $1; }
   ;
 
-/* $$ type should be TYPE_NODE y_type_node */
+/* $$ type should be typedef_item_p (y_typedef_item) */
 type_definition:
     new_identifier '=' type_denoter            { $$ = make_typedef_node($1, $3); }
   ;

@@ -21,6 +21,8 @@
 #include "types.h"   // Imports type-related methods and structures.
 #include "symtab.h"  // Import symbol table-related methods and structures.
 
+
+// ***** IDENTIFIER-RELATED CONSTRUCTIONS ***** //
 /* A structure that holds items to be stored in an ST_ID list.
  * 
  * Each item points to the next in the list and stores the value of the ST_ID it encases.
@@ -38,5 +40,24 @@ typedef stid_item_p stid_list;
 stid_list new_stid_list(ST_ID root);
 
 /* Function to append a new ST_ID to an existing list of such items. */
-stid_list append_to_stid_list(stid_list base, ST_ID new_id);
+void append_stid_to_list(stid_list base, ST_ID new_id);
+
+
+
+
+// ***** TYPE-RELATED CONSTRUCTIONS ***** //
+
+typedef struct typedef_item
+{
+    typedef_item* next;
+            ST_ID new_def;
+             TYPE old_type;
+}
+TYPEDEF_ITEM, *typedef_item_p, *typedef_list
+
+/* Function to create a typedef_list node from the given ST_ID and TYPE. */
+typedef_item_p make_typedef_node(ST_ID id, TYPE t);
+
+/* Function to append a new typedef_item to an existing list of such items. */
+void append_typedef_to_list(typedef_list base, typedef_item_p newItem);
 #endif
