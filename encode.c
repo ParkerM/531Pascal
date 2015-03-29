@@ -4,25 +4,32 @@ void encode(ST_ID id)
 {
   int blockNum = 0;
   ST_DR record = st_lookup(id, &blockNum);
-  char* idStr = st_get_id_str(id);
-  switch(record->tag)
+  if(record != NULL)
   {
-    case GDECL:
-      b_global_decl(idStr, get_type_alignment(record->u.decl->type), get_type_size(record->u.decl->type));
-      encode_decl_from_type(record->u.decl->type);
-    break;
-    
-    case PDECL:
-      encode_decl_from_type(record->u.decl->type);
-    break;
-    
-    case TYPENAME:
-      encode_decl_from_type(record->u.typename->type);
-    break;
-    
-    default:
-      bug("Unknown type: %d", record->tag);
-    break;
+    char* idStr = st_get_id_str(id);
+    switch(record->tag)
+    {
+      case GDECL:
+        b_global_decl(idStr, get_type_alignment(record->u.decl->type), get_type_size(record->u.decl->type));
+        encode_decl_from_type(record->u.decl->type);
+      break;
+      
+      case PDECL:
+        encode_decl_from_type(record->u.decl->type);
+      break;
+      
+      case TYPENAME:
+        encode_decl_from_type(record->u.typename->type);
+      break;
+      
+      default:
+        bug("Unknown type: %d", record->tag);
+      break;
+    }
+  }
+  else
+  {
+    fatal("Record could not be found in symbol table");
   }
 }
 
@@ -35,7 +42,8 @@ void encode_decl_from_type(TYPE type)
 
 int get_type_size(TYPE type)
 {
-  switch(ty_query(type))
+  TYPETAG query = ty_query(type);
+  switch(query)
   {
     case TYARRAY:
       INDEX_LIST indices;
@@ -70,6 +78,7 @@ int get_type_size(TYPE type)
     break;
     
     default:
+      msg("TYPETAG may have undefined size: %d", query);
       return 0;
     break;
   }
@@ -77,7 +86,8 @@ int get_type_size(TYPE type)
 
 int get_type_alignment(TYPE type)
 {
-  switch(ty_query(type))
+  TYPETAG query = ty_query(type);
+  switch(query)
   {
     case TYARRAY:
       INDEX_LIST indices;
@@ -110,6 +120,7 @@ int get_type_alignment(TYPE type)
     break;
     
     default:
+      msg("TYPETAG may have undefined alignment: %d", query);
       return 0;
     break;
   }
