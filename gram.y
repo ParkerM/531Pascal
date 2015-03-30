@@ -50,6 +50,7 @@
 #define YYDEBUG 1
 
 #include "tree.h"
+#include "types.h"
 
 void set_yydebug(int);
 void yyerror(const char *);
@@ -74,6 +75,8 @@ void yyerror(const char *);
     
     typedef_item_p  y_typedef_item;
     TYPE            y_type;
+
+    PARAM_LIST 		y_param_list;
 }
 
 %token <y_string> LEX_ID
@@ -143,11 +146,13 @@ void yyerror(const char *);
 %type <y_string>    new_identifier_1
 %type <y_stid_item> id_list
 
-%type <y_typedef_item> type_definition_list type_definition type_denoter typename new_ordinal_type
-%type <y_typedef_item> new_pointer_type new_procedural_type new_structured_type subrange_type
-%type <y_typedef_item> pointer_domain_type array_type procedural_type_formal_parameter_list
-%type <y_typedef_item> ordinal_index_type array_index_list procedural_type_formal_parameter
-%type <y_typedef_item> optional_procedural_type_formal_parameter_list
+%type <y_type> typename type_denoter new_ordinal_type subrange_type new_pointer_type pointer_domain_type
+%type <y_type> new_structured_type array_type ordinal_index_type new_procedural_type
+
+%type <y_typedef_item> type_definition_list type_definition array_index_list
+
+%type <y_param_list> procedural_type_formal_parameter procedural_type_formal_parameter_list
+%type <y_param_list> optional_procedural_type_formal_parameter_list
 
 /* Precedence rules */
 
