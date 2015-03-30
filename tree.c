@@ -14,6 +14,8 @@
  */
  
  #include "tree.h"
+ #include "types.h"
+ #include "symtab.h"
  
  stid_list new_stid_list(ST_ID root)
  {

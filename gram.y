@@ -143,7 +143,11 @@ void yyerror(const char *);
 %type <y_string>    new_identifier_1
 %type <y_stid_item> id_list
 
-%type <y_typedef_item> type_definition_list type_definition
+%type <y_typedef_item> type_definition_list type_definition type_denoter typename new_ordinal_type
+%type <y_typedef_item> new_pointer_type new_procedural_type new_structured_type subrange_type
+%type <y_typedef_item> pointer_domain_type array_type procedural_type_formal_parameter_list
+%type <y_typedef_item> ordinal_index_type array_index_list procedural_type_formal_parameter
+%type <y_typedef_item> optional_procedural_type_formal_parameter_list
 
 /* Precedence rules */
 
@@ -186,17 +190,17 @@ id_list:
 
 /* $$ type should be TYPE. */
 typename:
-    LEX_ID. { /* TODO: allocate basic type to $$ */ }
+    LEX_ID { /* TODO: allocate basic type to $$ */ }
   ;
 
 /* $$ type should be ST_ID. */
 identifier:
-    LEX_ID { $$ = stdr_enter_id($1); }
+    LEX_ID { $$ = st_enter_id($1); }
   ;
 
 /* $$ type should be ST_ID. */
 new_identifier:
-    new_identifier_1 { $$ = stdr_enter_id($1); }
+    new_identifier_1 { $$ = st_enter_id($1); }
   ;
 
 /* $$ type should be y_string. */
@@ -404,7 +408,7 @@ new_procedural_type:
 
 /* $$ type should be PARAM_LIST. */
 optional_procedural_type_formal_parameter_list:
-    /* empty */ { $$ = null; }
+    /* empty  { $$ = null; } */
   | '(' procedural_type_formal_parameter_list ')' { $$ = $2; }
   ;
 

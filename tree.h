@@ -29,10 +29,9 @@
  */
 typedef struct stid_item
 {
-    stid_item* next;
-         ST_ID enroll_papers;
-}
-STID_ITEM, *stid_item_p
+    struct stid_item* next;
+    ST_ID enroll_papers;
+} STID_ITEM, *stid_item_p;
 
 typedef stid_item_p stid_list;
 
@@ -44,16 +43,14 @@ void append_stid_to_list(stid_list base, ST_ID new_id);
 
 
 
-
 // ***** TYPE-RELATED CONSTRUCTIONS ***** //
 
 typedef struct typedef_item
 {
-    typedef_item* next;
-            ST_ID new_def;
-             TYPE old_type;
-}
-TYPEDEF_ITEM, *typedef_item_p, *typedef_list
+    struct typedef_item* next;
+    ST_ID new_def;
+    TYPE old_type;
+} TYPEDEF_ITEM, *typedef_item_p, *typedef_list;
 
 /* Function to create a typedef_list node from the given ST_ID and TYPE. */
 typedef_item_p make_typedef_node(ST_ID id, TYPE t);

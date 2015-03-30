@@ -59,7 +59,7 @@ message.o: message.c message.h defs.h
 
 utils.o: utils.c symtab.h message.h defs.h $(BACKEND).h
 
-gram.o : gram.y $(PPC3H)
+gram.o : gram.y $(PPC3H) tree.h
 	$(YACC) $(YFLAGS) gram.y
 	$(CC) $(CFLAGS) -c y.tab.c
 	mv y.tab.o gram.o
@@ -74,5 +74,5 @@ y.output: gram.y
 	$(YACC) -v -y gram.y
 
 clean:
-	-rm -f ppc3 *.o y.tab.h y.output y.tab.c
+	-rm -f ppc3 *.o lex.yy.c y.tab.h y.output y.tab.c
 
