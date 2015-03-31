@@ -398,7 +398,7 @@ subrange_type:
 
 /* $$ type should be TYPE (y_TYPE). */
 new_pointer_type:
-    pointer_char pointer_domain_type  { /* make unresolved pointer type using y_TYPE of $3. */ } 
+    pointer_char pointer_domain_type  { $$ = ty_build_ptr($2); } 
   ;
 
 pointer_char:
@@ -408,7 +408,7 @@ pointer_char:
 
 /* $$ type should be TYPE (y_TYPE). */
 pointer_domain_type:
-    new_identifier      { /* somehow convert $1's ST_ID to $$'s type. */ }
+    new_identifier      { $$ = get_basic_type(st_get_id_str($1)); }
   | new_procedural_type { $$ = $1; }
   ;
 
@@ -449,7 +449,7 @@ new_structured_type:
 
 /* $$ type should be TYPE (y_TYPE). */
 array_type:
-    LEX_ARRAY '[' array_index_list ']' LEX_OF type_denoter { /* create new array type using $2 and $4. */ }
+    LEX_ARRAY '[' array_index_list ']' LEX_OF type_denoter { $$ = ty_build_array($6, $3); }
   ;
 
 /* $$ type should be TYPE_LIST. */
