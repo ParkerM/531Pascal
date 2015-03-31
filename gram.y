@@ -318,7 +318,7 @@ number:
 
 unsigned_number:
     LEX_INTCONST  { $$ = allocate_number_constant_int($1); }
-  | LEX_REALCONST { $$ = allocate_number_constant_real($2); }
+  | LEX_REALCONST { $$ = allocate_number_constant_real($1); }
   ;
 
 sign:
