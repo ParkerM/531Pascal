@@ -50,6 +50,7 @@
 #define YYDEBUG 1
 
 #include "tree.h"
+#include "types.h"
 
 void set_yydebug(int);
 void yyerror(const char *);
@@ -74,6 +75,8 @@ void yyerror(const char *);
     
     typedef_item_p  y_typedef_item;
     TYPE            y_type;
+
+    PARAM_LIST 		y_param_list;
 }
 
 %token <y_string> LEX_ID
@@ -143,7 +146,13 @@ void yyerror(const char *);
 %type <y_string>    new_identifier_1
 %type <y_stid_item> id_list
 
-%type <y_typedef_item> type_definition_list type_definition
+%type <y_type> typename type_denoter new_ordinal_type subrange_type new_pointer_type pointer_domain_type
+%type <y_type> new_structured_type array_type ordinal_index_type new_procedural_type
+
+%type <y_typedef_item> type_definition_list type_definition array_index_list
+
+%type <y_param_list> procedural_type_formal_parameter procedural_type_formal_parameter_list
+%type <y_param_list> optional_procedural_type_formal_parameter_list
 
 /* Precedence rules */
 
@@ -186,17 +195,17 @@ id_list:
 
 /* $$ type should be TYPE. */
 typename:
-    LEX_ID. { /* TODO: allocate basic type to $$ */ }
+    LEX_ID { /* TODO: allocate basic type to $$ */ }
   ;
 
 /* $$ type should be ST_ID. */
 identifier:
-    LEX_ID { $$ = stdr_enter_id($1); }
+    LEX_ID { $$ = st_enter_id($1); }
   ;
 
 /* $$ type should be ST_ID. */
 new_identifier:
-    new_identifier_1 { $$ = stdr_enter_id($1); }
+    new_identifier_1 { $$ = st_enter_id($1); }
   ;
 
 /* $$ type should be y_string. */
@@ -404,7 +413,7 @@ new_procedural_type:
 
 /* $$ type should be PARAM_LIST. */
 optional_procedural_type_formal_parameter_list:
-    /* empty */ { $$ = null; }
+    /* empty  { $$ = null; } */
   | '(' procedural_type_formal_parameter_list ')' { $$ = $2; }
   ;
 
@@ -526,7 +535,7 @@ variable_declaration_list:
   ;
 
 variable_declaration:
-    id_list ':' type_denoter semi
+    id_list ':' type_denoter semi 	{vardec($1, $3);}
   ;
 
 function_declaration:
