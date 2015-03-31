@@ -21,7 +21,7 @@
  
 num_const_p allocate_number_const_int(int i)
 {
-  num_const_p number = malloc(sizeof(num_const));
+  num_const_p number = (num_const_p) malloc(sizeof(num_const));
   
   number->type = TYUNSIGNEDINT;
   number->v.integer = i;
@@ -31,10 +31,10 @@ num_const_p allocate_number_const_int(int i)
 
 num_const_p allocate_number_const_real(double d)
 {
-  num_const_p number = malloc(sizeof(num_const));
+  num_const_p number = (num_const_p) malloc(sizeof(num_const));
   
-  number.type = TYDOUBLE;
-  number.v.real = d;
+  number->type = TYDOUBLE;
+  number->v.real = d;
   
   return number;
 }
@@ -56,6 +56,7 @@ num_const_p alter_constant(int i, num_const_p number)
         number->v.real *= (double)i;
         break;
       default:
+        break;
         // not good!
     }
   }

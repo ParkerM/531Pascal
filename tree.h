@@ -77,6 +77,8 @@ void process_typedefs(typedef_list list);
 /* Processes the string to get the basic type. */
 TYPE get_basic_type(char*);
 
+/* Creates a subrange type from the given constants. As of PROJECT 1, the only num_consts
+   accepted are integer constants. */
 TYPE create_subrange(num_const_p low, num_const_p high);
 
 /* Function to merge two param lists if separated by semicolon */
