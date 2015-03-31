@@ -108,6 +108,8 @@ typedef_item_p make_typedef_node(ST_ID id, TYPE t)
   
   new_typedef->new_def = id;
   new_typedef->old_type = t;
+  
+  return new_typedef;
 }
  
 void install_typedef(typedef_item_p item)
