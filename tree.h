@@ -91,6 +91,13 @@ TYPE get_basic_type(char*);
    accepted are integer constants. */
 TYPE create_subrange(num_const_p low, num_const_p high);
 
+
+/* Function to create a new param list when a formal parameter is encountered */
+PARAM_LIST make_new_param_list(TYPE t);
+
+/* Function to append a TYPE to an existing typedef_list */
+PARAM_LIST append_to_param_list(PARAM_LIST list, TYPE t);
+
 /* Function to merge two param lists if separated by semicolon */
 PARAM_LIST merge_param_lists(PARAM_LIST list1, PARAM_LIST list2);
 
@@ -102,4 +109,7 @@ TYPE_LIST append_to_type_list(TYPE_LIST list, TYPE t);
 
 /* Associate id_list with type and add to ST DR */
 void vardec(stid_list list, TYPE t);
+
+/* Associate id_list with type as a set of parameters*/
+void paramdec(stid_list list, TYPE t);
 #endif

@@ -147,16 +147,17 @@ void yyerror(const char *);
 
 %type <y_stid>      identifier new_identifier
 %type <y_string>    new_identifier_1
-%type <y_stid_item> id_list
+%type <y_stid_item> id_list formal_parameter
 
 %type <y_type> typename type_denoter new_ordinal_type subrange_type new_pointer_type pointer_domain_type
-%type <y_type> new_structured_type array_type ordinal_index_type new_procedural_type
+%type <y_type> new_structured_type array_type ordinal_index_type new_procedural_type functiontype
 
 %type <y_typedef_item> type_definition
 %type <y_type_list>    array_index_list
 
-%type <y_param_list> procedural_type_formal_parameter procedural_type_formal_parameter_list
-%type <y_param_list> optional_procedural_type_formal_parameter_list
+%type <y_param_list> procedural_type_formal_parameter_list formal_parameter_list procedural_type_formal_parameter 
+
+%type <y_param_list> optional_procedural_type_formal_parameter_list optional_par_formal_parameter_list
 
 %type <y_num_const> constant number unsigned_number
 %type <y_cint> sign
@@ -414,8 +415,13 @@ pointer_domain_type:
 
 /* $$ type should be TYPE (y_TYPE). */
 new_procedural_type:
-    LEX_PROCEDURE optional_procedural_type_formal_parameter_list             { /* create new procedure type with param list. */ }
-  | LEX_FUNCTION optional_procedural_type_formal_parameter_list functiontype { /* create new functiontype-returning function type with param list. */ }
+    LEX_PROCEDURE optional_procedural_type_formal_parameter_list             { 
+    /* create new procedure type with param list. */ 
+    $$ = ty_build_func(ty_build_basic(TYVOID), $2, FALSE);
+    }
+  | LEX_FUNCTION optional_procedural_type_formal_parameter_list functiontype { /* create new functiontype-returning function type with param list. */ 
+  $$ = ty_build_func($3, $2, FALSE);
+  }
   ;
 
 /* $$ type should be PARAM_LIST. */
@@ -426,16 +432,16 @@ optional_procedural_type_formal_parameter_list:
 
 /* $$ type should be PARAM_LIST. */
 procedural_type_formal_parameter_list:
-    procedural_type_formal_parameter                                             { $$ = $1; }
+    procedural_type_formal_parameter { $$ = make_new_param_list($1); }
   | procedural_type_formal_parameter_list semi procedural_type_formal_parameter  { $$ = merge_param_lists($1, $3); } 
   ;
 
 /* $$ type should be PARAM_LIST. */
 procedural_type_formal_parameter:
-    id_list                      { /* construct PARAM_LIST using each of id_list as pass-by-value. */ }
-  | id_list ':' typename         { /* construct PARAM_LIST using each of id_list as pass-by-value. */ }
-  | LEX_VAR id_list ':' typename { /* construct PARAM_LIST using each of id_list as pass-by-reference. */ }
-  | LEX_VAR id_list              { /* construct PARAM_LIST using each of id_list as pass-by-reference. */ }
+    id_list                      { $$ = make_new_param_list($1); }
+  | id_list ':' typename         { paramdec($1, $3); $$ = make_new_param_list($1); }
+  | LEX_VAR id_list ':' typename { paramdec($2, $4); $$ = make_new_param_list($2); }
+  | LEX_VAR id_list              { $$ = make_new_param_list($2); }
   ;
 
 /* $$ type should be TYPE (y_TYPE). */
@@ -566,25 +572,25 @@ directive:
   ;
 
 functiontype:
-    /* empty */
-  | ':' typename
+    /* empty */ { $$ = ty_build_basic(TYVOID); }
+  | ':' typename { $$ = $2; }
   ;
 
 /* parameter specification section */
 
 optional_par_formal_parameter_list:
-    /* empty */
-  | '(' formal_parameter_list ')'
+    /* empty */ { $$ = NULL; }
+  | '(' formal_parameter_list ')' { $$ = $2;}
   ;
 
 formal_parameter_list:
-    formal_parameter
-  | formal_parameter_list semi formal_parameter
+    formal_parameter { $$ = make_new_param_list($1); }
+  | formal_parameter_list semi formal_parameter { $$ = append_to_param_list($1, $3); }
   ;
 
 formal_parameter:
-    id_list ':' typename
-  | LEX_VAR id_list ':' typename
+    id_list ':' typename { paramdec($1, $3); $$ = $1; }
+  | LEX_VAR id_list ':' typename { paramdec($2, $4); $$ = $2; }
   ;
 
 
