@@ -115,3 +115,23 @@ typedef_list append_to_type_list(typedef_list list, TYPE t)
 
     current->next = t;
 }
+
+void vardec(stid_list list, TYPE t)
+{
+    message("vardec");
+
+    //create ST data record
+    ST_DR dr;
+
+    //while list is not null
+    while (list)
+    {
+        dr = stdr_alloc();
+        dr->tag = GDECL;
+        dr->u.decl.type = t;
+        st_install(list->enrollment_papers, dr);
+        message("added type: ");
+        //ty_print_type(t); //currently gives "illegal typetag"
+        list = list->next;
+    }
+}

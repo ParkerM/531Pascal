@@ -535,7 +535,7 @@ variable_declaration_list:
   ;
 
 variable_declaration:
-    id_list ':' type_denoter semi
+    id_list ':' type_denoter semi 	{vardec($1, $3);}
   ;
 
 function_declaration:

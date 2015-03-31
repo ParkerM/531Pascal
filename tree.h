@@ -69,4 +69,7 @@ typedef_list make_new_type_list(TYPE t);
 
 /* Function to append a TYPE to an existing typedef_list */
 typedef_list append_to_type_list(typedef_list list, TYPE t);
+
+/* Associate id_list with type and add to ST DR */
+void vardec(stid_list list, TYPE t);
 #endif
