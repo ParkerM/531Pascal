@@ -31,13 +31,13 @@ typedef struct number_constant
   TYPETAG type;
   union
   {
-    int integer;
+    long integer;
     double real;
   } v;
 } num_const, *num_const_p;
 
 /* Creates a number constant structure from an integer. */
-num_const_p allocate_number_const_int(int i);
+num_const_p allocate_number_const_int(long i);
 
 /* Creates a number constant structure from a double (real). */
 num_const_p allocate_number_const_real(double d);

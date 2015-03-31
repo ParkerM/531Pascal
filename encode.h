@@ -7,7 +7,7 @@
 #include "symtab.h"
 #include "message.h"
 
-void encode(ST_DR rec);
+void encode(ST_ID id);
 void encode_decl_from_type(TYPE type);
 int get_type_size(TYPE type);
 int get_type_alignment(TYPE type);

@@ -19,11 +19,11 @@ TYPE_LIST unresolveds = NULL;
 
 void add_unresolved_ptr_to_list(TYPE ptr);
 
-num_const_p allocate_number_const_int(int i)
+num_const_p allocate_number_const_int(long i)
 {
   num_const_p number = (num_const_p) malloc(sizeof(num_const));
   
-  number->type = TYSIGNEDINT;
+  number->type = TYSIGNEDLONGINT;
   number->v.integer = i;
   
   return number;
@@ -49,7 +49,7 @@ num_const_p sign_constant(int i, num_const_p number)
   {
     switch (number->type)
     {
-      case TYSIGNEDINT:
+      case TYSIGNEDLONGINT:
         number->v.integer *= i;
         break;
       case TYDOUBLE:
@@ -66,7 +66,7 @@ num_const_p sign_constant(int i, num_const_p number)
  
 stid_list new_stid_list(ST_ID root)
 {
-  message("new stid list");
+  //message("new stid list");
   // Allocate a new stid_item_p value.
   stid_item_p value = (stid_item_p) malloc(sizeof(STID_ITEM));
   
@@ -79,7 +79,7 @@ stid_list new_stid_list(ST_ID root)
 
 void append_stid_to_list(stid_list base, ST_ID new_id)
 {
-  message("append stid to list");
+  //message("append stid to list");
 
   // Allocate a new stid_item_p item.
   stid_item_p newItem = (stid_item_p) malloc(sizeof(STID_ITEM));
@@ -103,7 +103,7 @@ void append_stid_to_list(stid_list base, ST_ID new_id)
 
 typedef_item_p make_typedef_node(ST_ID id, TYPE t)
 {
-  message("make typedef node");
+  //message("make typedef node");
   typedef_item_p new_typedef = (typedef_item_p) malloc(sizeof(TYPEDEF_ITEM));
   
   new_typedef->new_def = id;
@@ -114,7 +114,7 @@ typedef_item_p make_typedef_node(ST_ID id, TYPE t)
  
 void install_typedef(typedef_item_p item)
 {
-    message("install typedef");
+    //message("install typedef");
     
     ST_ID id = item->new_def;
     TYPE t = item->old_type;
@@ -129,14 +129,14 @@ void install_typedef(typedef_item_p item)
       
       if (!didItWork)
       {
-        error("Line %d: Found duplicate definition for \"%s\"", sc_line(), st_get_id_str(id));
+        error("Found duplicate definition for \"%s\"", sc_line(), st_get_id_str(id));
       }
     }
 }
 
 void process_unresolved_types()
 {
-    message("process unresolved types");
+    //message("process unresolved types");
     
     if (unresolveds != NULL)
     {
@@ -180,7 +180,7 @@ TYPE get_basic_type(char* typename)
   }
   if (strcmp(typename, "Integer") == 0)
   {
-    return ty_build_basic(TYSIGNEDINT);
+    return ty_build_basic(TYSIGNEDLONGINT);
   }
   if (strcmp(typename, "Char") == 0)
   {
@@ -229,7 +229,7 @@ TYPE get_basic_type(char* typename)
 
 TYPE create_subrange(num_const_p low, num_const_p high)
 {
-  if (low->type != TYSIGNEDINT && high->type != TYSIGNEDINT)
+  if (low->type != TYSIGNEDLONGINT && high->type != TYSIGNEDLONGINT)
   {
     // not good!
     return NULL;
@@ -254,7 +254,7 @@ PARAM_LIST merge_param_lists(PARAM_LIST list1, PARAM_LIST list2)
 
 TYPE_LIST make_new_type_list(TYPE t)
 {
-    message("make new type list");
+    //message("make new type list");
     // Allocate a new TYPE_LIST value.
     TYPE_LIST value = (TYPE_LIST) malloc(sizeof(TLIST_NODE));
     
@@ -268,7 +268,7 @@ TYPE_LIST make_new_type_list(TYPE t)
 
 TYPE_LIST append_to_type_list(TYPE_LIST list, TYPE t)
 {
-    message("append to type list");
+    //message("append to type list");
 
     TYPE_LIST newNode = (TYPE_LIST) malloc(sizeof(TLIST_NODE));
     newNode->type = t;
@@ -287,7 +287,7 @@ TYPE_LIST append_to_type_list(TYPE_LIST list, TYPE t)
 
 void vardec(stid_list list, TYPE t)
 {
-    message("vardec");
+    //message("vardec");
 
     //create ST data record
     ST_DR dr;
@@ -298,9 +298,22 @@ void vardec(stid_list list, TYPE t)
         dr = stdr_alloc();
         dr->tag = GDECL;
         dr->u.decl.type = t;
-        st_install(list->enrollment_papers, dr);
-        message("added type: ");
-        ty_print_type(t); //currently gives "illegal typetag"
+        
+        BOOLEAN newRec = st_install(list->enrollment_papers, dr);
+        
+        if (newRec)
+        {
+          encode(list->enrollment_papers);
+        }
+        else
+        {
+          error("Duplicate definition at \"%s\"", st_get_id_str(list->enrollment_papers));
+        }
+        //message("added type: ");
+        //ty_print_type(t); //currently gives "illegal typetag"
+        
+        
+        
         list = list->next;
     }
 }

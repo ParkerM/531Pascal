@@ -10,16 +10,16 @@ void encode(ST_ID id)
     switch(record->tag)
     {
       case GDECL:
-        b_global_decl(idStr, get_type_alignment(record->u.decl->type), get_type_size(record->u.decl->type));
-        encode_decl_from_type(record->u.decl->type);
+        b_global_decl(idStr, get_type_alignment(record->u.decl.type), get_type_size(record->u.decl.type));
+        encode_decl_from_type(record->u.decl.type);
       break;
       
       case PDECL:
-        encode_decl_from_type(record->u.decl->type);
+        encode_decl_from_type(record->u.decl.type);
       break;
       
       case TYPENAME:
-        encode_decl_from_type(record->u.typename->type);
+        encode_decl_from_type(record->u.typename.type);
       break;
       
       default:
@@ -35,7 +35,6 @@ void encode(ST_ID id)
 
 void encode_decl_from_type(TYPE type)
 {
-  TYPETAG tag = ty_query(type);
   int size = get_type_size(type);
   b_skip(size);
 }
@@ -46,11 +45,23 @@ int get_type_size(TYPE type)
   switch(query)
   {
     case TYARRAY:
-      INDEX_LIST indices;
+    {
+      INDEX_LIST indices = NULL;
       TYPE elementType = ty_query_array(type, &indices);
-      long low, high;
-      ty_query_subrange(indices, &low, &high);
-      return get_type_size(elementType)*(high-low+1);
+      
+      long runningProduct = 1L;
+      
+      while (indices)
+      {
+        long low, high;
+        ty_query_subrange(indices->type, &low, &high);
+        runningProduct *= (high-low+1);
+        
+        indices = indices->next;
+      }
+      
+      return get_type_size(elementType)*runningProduct;
+    }
     break;
     
     case TYPTR:
@@ -75,6 +86,15 @@ int get_type_size(TYPE type)
     
     case TYDOUBLE:
       return 8;
+    break;
+    
+    case TYSUBRANGE:
+    {
+      long low, high;
+      TYPE base = ty_query_subrange(type, &low, &high);
+      
+      return get_type_size(base)*(high-low+1);
+    }
     break;
     
     default:
@@ -90,9 +110,11 @@ int get_type_alignment(TYPE type)
   switch(query)
   {
     case TYARRAY:
-      INDEX_LIST indices;
+    {
+      INDEX_LIST indices = NULL;
       TYPE elementType = ty_query_array(type, &indices);
       return get_type_alignment(elementType);
+    }
     break;
     
     case TYPTR:
@@ -117,6 +139,15 @@ int get_type_alignment(TYPE type)
     
     case TYDOUBLE:
       return 8;
+    break;
+    
+    case TYSUBRANGE:
+    {
+      long low, high;
+      TYPE base = ty_query_subrange(type, &low, &high);
+      
+      return get_type_alignment(base)*(high-low+1);
+    }
     break;
     
     default:

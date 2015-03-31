@@ -124,7 +124,7 @@ void yyerror(const char *);
 
 /* GPC internal tokens */
 /* MODIFIED to introduce types. */
-%token <y_cint> LEX_INTCONST
+%token <y_int> LEX_INTCONST
 %token <y_string> LEX_STRCONST
 %token <y_real> LEX_REALCONST
 %token LEX_RANGE LEX_ELLIPSIS
