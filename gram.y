@@ -314,7 +314,7 @@ constant:
   ;
 
 number:
-    sign unsigned_number { $$ = alter_constant($1, $2); }
+    sign unsigned_number { $$ = sign_constant($1, $2); }
   | unsigned_number { $$ = $1; }
   ;
 

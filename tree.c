@@ -13,17 +13,13 @@
  *   Purpose: CSCE 531 (Compiler Construction) Project
  */
  
- #include "tree.h"
- #include "encode.h"
- #include "message.h"
- #include "types.h"
- #include "symtab.h"
- 
+#include "tree.h"
+
 num_const_p allocate_number_const_int(int i)
 {
   num_const_p number = (num_const_p) malloc(sizeof(num_const));
   
-  number->type = TYUNSIGNEDINT;
+  number->type = TYSIGNEDINT;
   number->v.integer = i;
   
   return number;
@@ -39,7 +35,7 @@ num_const_p allocate_number_const_real(double d)
   return number;
 }
 
-num_const_p alter_constant(int i, num_const_p number)
+num_const_p sign_constant(int i, num_const_p number)
 {
   if (i != -1 || i != 1)
   {
@@ -49,7 +45,7 @@ num_const_p alter_constant(int i, num_const_p number)
   {
     switch (number->type)
     {
-      case TYUNSIGNEDINT:
+      case TYSIGNEDINT:
         number->v.integer *= i;
         break;
       case TYDOUBLE:
@@ -64,52 +60,52 @@ num_const_p alter_constant(int i, num_const_p number)
   return number;
 }
  
- stid_list new_stid_list(ST_ID root)
- {
-    message("new stid list");
-    // Allocate a new stid_item_p value.
-    stid_item_p value = (stid_item_p) malloc(sizeof(STID_ITEM));
-    
-    // Explicitly set the next pointer to NULL and set the enrollment_papers.
-    value->next = NULL;
-    value->enrollment_papers = root;
-    
-    return value;
- }
- 
- void append_stid_to_list(stid_list base, ST_ID new_id)
- {
-    message("append stid to list");
+stid_list new_stid_list(ST_ID root)
+{
+  message("new stid list");
+  // Allocate a new stid_item_p value.
+  stid_item_p value = (stid_item_p) malloc(sizeof(STID_ITEM));
+  
+  // Explicitly set the next pointer to NULL and set the enrollment_papers.
+  value->next = NULL;
+  value->enrollment_papers = root;
+  
+  return value;
+}
 
-    // Allocate a new stid_item_p item.
-    stid_item_p newItem = (stid_item_p) malloc(sizeof(STID_ITEM));
-    
-    // Explicitly set the next pointer to NULL and set the enrollment_papers.
-    newItem->next = NULL;
-    newItem->enrollment_papers = new_id;
-    
-    // Now, loop through the list until the last item is found.
-    stid_item_p currentItem = base;
-    
-    while (currentItem->next)
-    {
-        currentItem = currentItem->next;
-    }
-    
-    // Append the newItem to the end of the list.
-    currentItem->next = newItem;
-    
- }
- 
- typedef_item_p make_typedef_node(ST_ID id, TYPE t)
- {
-    message("make typedef node");
-    typedef_item_p new_typedef = (typedef_item_p) malloc(sizeof(TYPEDEF_ITEM));
-    
-    new_typedef->next = NULL;
-    new_typedef->new_def = id;
-    new_typedef->old_type = t;
- }
+void append_stid_to_list(stid_list base, ST_ID new_id)
+{
+  message("append stid to list");
+
+  // Allocate a new stid_item_p item.
+  stid_item_p newItem = (stid_item_p) malloc(sizeof(STID_ITEM));
+  
+  // Explicitly set the next pointer to NULL and set the enrollment_papers.
+  newItem->next = NULL;
+  newItem->enrollment_papers = new_id;
+  
+  // Now, loop through the list until the last item is found.
+  stid_item_p currentItem = base;
+  
+  while (currentItem->next)
+  {
+      currentItem = currentItem->next;
+  }
+  
+  // Append the newItem to the end of the list.
+  currentItem->next = newItem;
+  
+}
+
+typedef_item_p make_typedef_node(ST_ID id, TYPE t)
+{
+  message("make typedef node");
+  typedef_item_p new_typedef = (typedef_item_p) malloc(sizeof(TYPEDEF_ITEM));
+  
+  new_typedef->next = NULL;
+  new_typedef->new_def = id;
+  new_typedef->old_type = t;
+}
  
 void append_typedef_to_list(typedef_list base, typedef_item_p newItem)
 {
@@ -124,9 +120,16 @@ void append_typedef_to_list(typedef_list base, typedef_item_p newItem)
     current->next = newItem;
 }
 
-void process_typedefs(TYPE_LIST list)
+void process_typedefs(typedef_list list)
 {
     message("process typedefs");
+    
+    typedef_item_p current = list;
+    
+    while (current != NULL)
+    {
+      message("");
+    }
 }
 
 TYPE get_basic_type(char* typename)
@@ -160,7 +163,7 @@ TYPE get_basic_type(char* typename)
 
 TYPE create_subrange(num_const_p low, num_const_p high)
 {
-  if (low->type != TYUNSIGNEDINT && high->type != TYUNSIGNEDINT)
+  if (low->type != TYSIGNEDINT && high->type != TYSIGNEDINT)
   {
     // not good!
     return NULL;

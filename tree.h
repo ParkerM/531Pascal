@@ -18,9 +18,14 @@
 
 #include <stdlib.h>
 
+#include "encode.h"
+#include "message.h"
 #include "types.h"   // Imports type-related methods and structures.
 #include "symtab.h"  // Import symbol table-related methods and structures.
 
+// ***** NUMERICAL CONSTANT-RELATED CONSTRUCTIONS ***** //
+/* A structure meant to hold a numerical constant of both the integral and real varieties.
+ */
 typedef struct number_constant
 {
   TYPETAG type;
@@ -31,9 +36,16 @@ typedef struct number_constant
   } v;
 } num_const, *num_const_p;
 
-num_const_p allocate_number_const_int(int);
-num_const_p allocate_number_const_real(double);
-num_const_p alter_constant(int, num_const_p);
+/* Creates a number constant structure from an integer. */
+num_const_p allocate_number_const_int(int i);
+
+/* Creates a number constant structure from a double (real). */
+num_const_p allocate_number_const_real(double d);
+
+/* Signes the number constant, based in the input for i (1 or -1 only, please!) */
+num_const_p sign_constant(int i, num_const_p number);
+
+
 
 // ***** IDENTIFIER-RELATED CONSTRUCTIONS ***** //
 /* A structure that holds items to be stored in an ST_ID list.
