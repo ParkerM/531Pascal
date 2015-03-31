@@ -140,6 +140,8 @@ void process_unresolved_types()
     
     if (unresolveds != NULL)
     {
+      BOOLEAN anyStillUnknown = FALSE;
+      
       TYPE_LIST current_item = unresolveds;
       
       while (current_item)
@@ -158,6 +160,11 @@ void process_unresolved_types()
             
             ty_resolve_ptr(current_item->type, theType);
           }
+        }
+        else
+        {
+          error("Unresolved pointer %s", st_get_id_str(id));
+          anyStillUnknown = TRUE;
         }
         
         current_item = current_item->next;
