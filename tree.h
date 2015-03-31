@@ -57,7 +57,6 @@ void append_stid_to_list(stid_list base, ST_ID new_id);
 
 
 // ***** TYPE-RELATED CONSTRUCTIONS ***** //
-
 typedef struct typedef_item
 {
     struct typedef_item* next;
@@ -85,10 +84,10 @@ TYPE create_subrange(num_const_p low, num_const_p high);
 PARAM_LIST merge_param_lists(PARAM_LIST list1, PARAM_LIST list2);
 
 /* Function to create a new type list when an ordinal index type is encountered */
-typedef_list make_new_type_list(TYPE t);
+TYPE_LIST make_new_type_list(TYPE t);
 
 /* Function to append a TYPE to an existing typedef_list */
-typedef_list append_to_type_list(typedef_list list, TYPE t);
+TYPE_LIST append_to_type_list(TYPE_LIST list, TYPE t);
 
 /* Associate id_list with type and add to ST DR */
 void vardec(stid_list list, TYPE t);

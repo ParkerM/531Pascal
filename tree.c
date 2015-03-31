@@ -124,7 +124,7 @@ void append_typedef_to_list(typedef_list base, typedef_item_p newItem)
     current->next = newItem;
 }
 
-void process_typedefs(typedef_list list)
+void process_typedefs(TYPE_LIST list)
 {
     message("process typedefs");
 }
@@ -183,31 +183,37 @@ PARAM_LIST merge_param_lists(PARAM_LIST list1, PARAM_LIST list2)
     message("merge param lists");
 }
 
-typedef_list make_new_type_list(TYPE t)
+TYPE_LIST make_new_type_list(TYPE t)
 {
     message("make new type list");
-    // Allocate a new typedef_item_p value.
-    typedef_item_p value = (typedef_item_p) malloc(sizeof(TYPEDEF_ITEM));
+    // Allocate a new TYPE_LIST value.
+    TYPE_LIST value = (TYPE_LIST) malloc(sizeof(TLIST_NODE));
     
     // Explicitly set the next pointer to NULL and copy the types from item
+    value->type = t;
     value->next = NULL;
-    value->new_def = NULL; //not sure what this should be
-    value->old_type = t;
+    value->prev = NULL;
     
     return value;
 }
 
-typedef_list append_to_type_list(typedef_list list, TYPE t)
+TYPE_LIST append_to_type_list(TYPE_LIST list, TYPE t)
 {
     message("append to type list");
-    typedef_list current = list;
+
+    TYPE_LIST newNode = (TYPE_LIST) malloc(sizeof(TLIST_NODE));
+    newNode->type = t;
+
+    TYPE_LIST current = list;
 
     while (current->next) 
     {
         current = current->next;
     }
 
-    current->next = t;
+    current->next = newNode;
+    
+    return current;
 }
 
 void vardec(stid_list list, TYPE t)
@@ -225,7 +231,7 @@ void vardec(stid_list list, TYPE t)
         dr->u.decl.type = t;
         st_install(list->enrollment_papers, dr);
         message("added type: ");
-        //ty_print_type(t); //currently gives "illegal typetag"
+        ty_print_type(t); //currently gives "illegal typetag"
         list = list->next;
     }
 }
