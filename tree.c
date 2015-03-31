@@ -17,6 +17,8 @@
 
 TYPE_LIST unresolveds = NULL;
 
+void add_unresolved_ptr_to_list(TYPE ptr);
+
 num_const_p allocate_number_const_int(int i)
 {
   num_const_p number = (num_const_p) malloc(sizeof(num_const));
@@ -184,6 +186,8 @@ TYPE get_basic_type(char* typename)
     {
       TYPE unresolvedPtr = ty_build_unresolved_ptr(identifier);
     
+      add_unresolved_ptr_to_list(unresolvedPtr);
+    
       return unresolvedPtr;
     }
   }
@@ -265,4 +269,33 @@ void vardec(stid_list list, TYPE t)
         ty_print_type(t); //currently gives "illegal typetag"
         list = list->next;
     }
+}
+
+// ---
+
+void add_unresolved_ptr_to_list(TYPE ptr)
+{
+  if (unresolveds == NULL)
+  {
+    unresolveds = (TYPE_LIST) malloc(sizeof(TLIST_NODE));
+    
+    unresolveds->type = ptr;
+    unresolveds->next = NULL;
+    unresolveds->prev = NULL;
+  }
+  else
+  {
+    TYPE_LIST new_node = (TYPE_LIST) malloc(sizeof(TLIST_NODE));
+    
+    new_node->type = ptr;
+    new_node->next = NULL;
+    new_node->prev = NULL;
+    
+    TYPE_LIST current = unresolveds;
+    
+    while (current->next) { current = current->next; }
+    
+    new_node->prev = current;
+    current->next = new_node;
+  }
 }
