@@ -112,6 +112,22 @@ void install_typedef(typedef_item_p item)
 {
     message("install typedef");
     
+    ST_ID id = item->new_def;
+    TYPE t = item->old_type;
+    
+    if (t != NULL)
+    {
+      ST_DR rec = stdr_alloc();
+      rec->tag = TYPENAME;
+      rec->u.typename.type = t;
+      
+      BOOLEAN didItWork = st_install(id, rec);
+      
+      if (!didItWork)
+      {
+        error("Line %d: Found duplicate definition for \"%s\"", sc_line(), st_get_id_str(id));
+      }
+    }
 }
 
 void process_unresolved_types()
@@ -122,30 +138,54 @@ void process_unresolved_types()
 
 TYPE get_basic_type(char* typename)
 {
-  if (strcmp(typename, "boolean") == 0)
+  if (strcmp(typename, "Boolean") == 0)
   {
     return ty_build_basic(TYSIGNEDCHAR);
   }
-  if (strcmp(typename, "integer") == 0)
+  if (strcmp(typename, "Integer") == 0)
   {
     return ty_build_basic(TYSIGNEDINT);
   }
-  if (strcmp(typename, "char") == 0)
+  if (strcmp(typename, "Char") == 0)
   {
     return ty_build_basic(TYUNSIGNEDCHAR);
   }
-  if (strcmp(typename, "single") == 0)
+  if (strcmp(typename, "Single") == 0)
   {
     return ty_build_basic(TYFLOAT);
   }
-  if (strcmp(typename, "real") == 0)
+  if (strcmp(typename, "Real") == 0)
   {
     return ty_build_basic(TYDOUBLE);
   }
   else
   {
     ST_ID identifier = st_enter_id(typename);
-    return ty_build_unresolved_ptr(identifier);
+    
+    int ignore = 0;
+    ST_DR isItThere = st_lookup(identifier, &ignore);
+    
+    if (isItThere)
+    {
+      if (isItThere->tag == TYPENAME)
+      {
+        TYPE theType = isItThere->u.typename.type;
+        
+        return theType;
+      }
+      else
+      {
+        error("Trying to redefine non-type identifier.");
+        /* TODO: Keep track of semantic errors. */
+        return NULL;
+      }
+    }
+    else
+    {
+      TYPE unresolvedPtr = ty_build_unresolved_ptr(identifier);
+    
+      return unresolvedPtr;
+    }
   }
 }
 
