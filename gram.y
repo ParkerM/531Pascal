@@ -76,7 +76,9 @@ void yyerror(const char *);
     typedef_item_p  y_typedef_item;
     TYPE            y_type;
 
-    PARAM_LIST 		y_param_list;
+    PARAM_LIST 		  y_param_list;
+    
+    num_const_p     y_num_const;
 }
 
 %token <y_string> LEX_ID
@@ -153,6 +155,9 @@ void yyerror(const char *);
 
 %type <y_param_list> procedural_type_formal_parameter procedural_type_formal_parameter_list
 %type <y_param_list> optional_procedural_type_formal_parameter_list
+
+%type <y_num_const> constant number unsigned_number
+%type <y_cint> sign
 
 /* Precedence rules */
 
@@ -300,25 +305,25 @@ constant_definition:
   ;
 
 constant:
-    identifier
-  | sign identifier
-  | number
-  | constant_literal
+    identifier       {}
+  | sign identifier  {}
+  | number           { $$ = $1; }
+  | constant_literal {}
   ;
 
 number:
-    sign unsigned_number
-  | unsigned_number
+    sign unsigned_number { $$ = alter_constant($1, $2); }
+  | unsigned_number { $$ = $1; }
   ;
 
 unsigned_number:
-    LEX_INTCONST
-  | LEX_REALCONST
+    LEX_INTCONST  { $$ = allocate_number_constant_int($1); }
+  | LEX_REALCONST { $$ = allocate_number_constant_real($2); }
   ;
 
 sign:
-    '+'
-  | '-'
+    '+' { $$ = 1; }
+  | '-' { $$ = -1; }
   ;
 
 constant_literal:
@@ -386,7 +391,7 @@ enumerator:
 
 /* $$ type should be TYPE (y_TYPE). */
 subrange_type:
-    constant LEX_RANGE constant  { /* make subrange using constants. */ }
+    constant LEX_RANGE constant  { $$ = create_subrange($1, $3); }
   ;
 
 /* $$ type should be TYPE (y_TYPE). */

@@ -21,6 +21,19 @@
 #include "types.h"   // Imports type-related methods and structures.
 #include "symtab.h"  // Import symbol table-related methods and structures.
 
+typedef struct number_constant
+{
+  TYPETAG type;
+  union
+  {
+    int integer;
+    double real;
+  } v;
+} num_const, *num_const_p;
+
+num_const_p allocate_number_const_int(int);
+num_const_p allocate_number_const_real(double);
+num_const_p alter_constant(int, num_const_p);
 
 // ***** IDENTIFIER-RELATED CONSTRUCTIONS ***** //
 /* A structure that holds items to be stored in an ST_ID list.
@@ -60,6 +73,11 @@ void append_typedef_to_list(typedef_list base, typedef_item_p newItem);
 
 /* Function to process a typedef_list */
 void process_typedefs(typedef_list list);
+
+/* Processes the string to get the basic type. */
+TYPE get_basic_type(char*);
+
+TYPE create_subrange(num_const_p low, num_const_p high);
 
 /* Function to merge two param lists if separated by semicolon */
 PARAM_LIST merge_param_lists(PARAM_LIST list1, PARAM_LIST list2);

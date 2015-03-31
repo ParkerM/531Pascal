@@ -19,6 +19,50 @@
  #include "types.h"
  #include "symtab.h"
  
+num_const_p allocate_number_const_int(int i)
+{
+  num_const_p number = malloc(sizeof(num_const));
+  
+  number->type = TYUNSIGNEDINT;
+  number->v.integer = i;
+  
+  return number;
+}
+
+num_const_p allocate_number_const_real(double d)
+{
+  num_const_p number = malloc(sizeof(num_const));
+  
+  number.type = TYDOUBLE;
+  number.v.real = d;
+  
+  return number;
+}
+
+num_const_p alter_constant(int i, num_const_p number)
+{
+  if (i != -1 || i != 1)
+  {
+    // not good!
+  }
+  else
+  {
+    switch (number->type)
+    {
+      case TYUNSIGNEDINT:
+        number->v.integer *= i;
+        break;
+      case TYDOUBLE:
+        number->v.real *= (double)i;
+        break;
+      default:
+        // not good!
+    }
+  }
+  
+  return number;
+}
+ 
  stid_list new_stid_list(ST_ID root)
  {
     message("new stid list");
@@ -110,6 +154,26 @@ TYPE get_basic_type(char* typename)
   {
     ST_ID identifier = st_enter_id(typename);
     return ty_build_unresolved_ptr(identifier);
+  }
+}
+
+TYPE create_subrange(num_const_p low, num_const_p high)
+{
+  if (low->type != TYUNSIGNEDINT && high->type != TYUNSIGNEDINT)
+  {
+    // not good!
+    return NULL;
+  }
+  else
+  {
+    long low_val = low->v.integer;
+    long high_val = high->v.integer;
+    
+    TYPE intType = ty_build_basic(TYUNSIGNEDINT);
+    
+    TYPE subrange = ty_build_subrange(intType, low_val, high_val);
+    
+    return subrange;
   }
 }
 
