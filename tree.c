@@ -247,6 +247,21 @@ TYPE create_subrange(num_const_p low, num_const_p high)
   }
 }
 
+void paramdec(stid_list list, TYPE t)
+{
+   message("paramdec");
+}
+
+PARAM_LIST make_new_param_list(TYPE t)
+{
+   message("make new param list");
+}
+
+PARAM_LIST append_to_param_list(PARAM_LIST list, TYPE t)
+{
+   message("append to param list");
+}
+
 PARAM_LIST merge_param_lists(PARAM_LIST list1, PARAM_LIST list2)
 {
     message("merge param lists");
