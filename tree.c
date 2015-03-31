@@ -145,10 +145,10 @@ void process_unresolved_types()
       while (current_item)
       {
         ST_ID id;
-        ty_query_ptr(current_item, &id);
+        ty_query_ptr(current_item->type, &id);
         
         int ignore = 0;
-        ST_DR aRecord = stdr_lookup(id, &ignore);
+        ST_DR aRecord = st_lookup(id, &ignore);
         
         if (aRecord != NULL)
         {
