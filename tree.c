@@ -84,6 +84,35 @@ void process_typedefs(typedef_list list)
     message("process typedefs");
 }
 
+TYPE get_basic_type(char* typename)
+{
+  if (strcmp(typename, "boolean") == 0)
+  {
+    return ty_build_basic(TYSIGNEDCHAR);
+  }
+  if (strcmp(typename, "integer") == 0)
+  {
+    return ty_build_basic(TYSIGNEDINT);
+  }
+  if (strcmp(typename, "char") == 0)
+  {
+    return ty_build_basic(TYUNSIGNEDCHAR);
+  }
+  if (strcmp(typename, "single") == 0)
+  {
+    return ty_build_basic(TYFLOAT);
+  }
+  if (strcmp(typename, "real") == 0)
+  {
+    return ty_build_basic(TYDOUBLE);
+  }
+  else
+  {
+    ST_ID identifier = st_enter_id(typename);
+    return ty_build_unresolved_ptr(identifier);
+  }
+}
+
 PARAM_LIST merge_param_lists(PARAM_LIST list1, PARAM_LIST list2)
 {
     message("merge param lists");

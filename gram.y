@@ -195,7 +195,7 @@ id_list:
 
 /* $$ type should be TYPE. */
 typename:
-    LEX_ID { /* TODO: allocate basic type to $$ */ }
+    LEX_ID { $$ = get_basic_type($1); }
   ;
 
 /* $$ type should be ST_ID. */
