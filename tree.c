@@ -15,6 +15,8 @@
  
 #include "tree.h"
 
+TYPE_LIST unresolveds = NULL;
+
 num_const_p allocate_number_const_int(int i)
 {
   num_const_p number = (num_const_p) malloc(sizeof(num_const));
@@ -102,34 +104,20 @@ typedef_item_p make_typedef_node(ST_ID id, TYPE t)
   message("make typedef node");
   typedef_item_p new_typedef = (typedef_item_p) malloc(sizeof(TYPEDEF_ITEM));
   
-  new_typedef->next = NULL;
   new_typedef->new_def = id;
   new_typedef->old_type = t;
 }
  
-void append_typedef_to_list(typedef_list base, typedef_item_p newItem)
+void install_typedef(typedef_item_p item)
 {
-    message("append typedef to list");
-    typedef_item_p current = base;
+    message("install typedef");
     
-    while (current->next)
-    {
-        current = current->next;
-    }
-    
-    current->next = newItem;
 }
 
-void process_typedefs(typedef_list list)
+void process_unresolved_types()
 {
-    message("process typedefs");
+    message("process unresolved types");
     
-    typedef_item_p current = list;
-    
-    while (current != NULL)
-    {
-      message("");
-    }
 }
 
 TYPE get_basic_type(char* typename)

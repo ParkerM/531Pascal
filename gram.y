@@ -152,7 +152,7 @@ void yyerror(const char *);
 %type <y_type> typename type_denoter new_ordinal_type subrange_type new_pointer_type pointer_domain_type
 %type <y_type> new_structured_type array_type ordinal_index_type new_procedural_type
 
-%type <y_typedef_item> type_definition_list type_definition
+%type <y_typedef_item> type_definition
 %type <y_type_list>    array_index_list
 
 %type <y_param_list> procedural_type_formal_parameter procedural_type_formal_parameter_list
@@ -346,13 +346,13 @@ string:
 
 /* $$ type should be NONE */
 type_definition_part:
-    LEX_TYPE type_definition_list semi         { process_typedefs($2); }
+    LEX_TYPE type_definition_list semi         { process_unresolved_types(); }
   ;
 
-/* $$ type should be typedef_list (y_typedef_item = typedef_list) */
+/* $$ type should be NONE */
 type_definition_list:
-    type_definition                            { $$ = $1; }
-  | type_definition_list semi type_definition  { append_typedef_to_list($1, $3); $$ = $1; }
+    type_definition                            { install_typedef($1); }
+  | type_definition_list semi type_definition  { install_typedef($3); }
   ;
 
 /* $$ type should be typedef_item_p (y_typedef_item) */

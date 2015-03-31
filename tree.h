@@ -71,19 +71,18 @@ void append_stid_to_list(stid_list base, ST_ID new_id);
 // ***** TYPE-RELATED CONSTRUCTIONS ***** //
 typedef struct typedef_item
 {
-    struct typedef_item* next;
     ST_ID new_def;
     TYPE old_type;
-} TYPEDEF_ITEM, *typedef_item_p, *typedef_list;
+} TYPEDEF_ITEM, *typedef_item_p;
 
-/* Function to create a typedef_list node from the given ST_ID and TYPE. */
+/* Function to create a typedef_item node from the given ST_ID and TYPE. */
 typedef_item_p make_typedef_node(ST_ID id, TYPE t);
 
-/* Function to append a new typedef_item to an existing list of such items. */
-void append_typedef_to_list(typedef_list base, typedef_item_p newItem);
+/* Function to install a new typedef_item into the symbol table. */
+void install_typedef(typedef_item_p item);
 
-/* Function to process a typedef_list */
-void process_typedefs(typedef_list list);
+/* Function to process unresolved pointer types */
+void process_unresolved_types();
 
 /* Processes the string to get the basic type. */
 TYPE get_basic_type(char*);
