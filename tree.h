@@ -93,10 +93,13 @@ TYPE create_subrange(num_const_p low, num_const_p high);
 
 
 /* Function to create a new param list when a formal parameter is encountered */
-PARAM_LIST make_new_param_list(TYPE t);
+PARAM_LIST make_new_param_list(PARAM_LIST t);
+
+/* Function ot create a new param list from a list of IDs. */
+PARAM_LIST make_new_param_list_from_ids(stid_item_p list);
 
 /* Function to append a TYPE to an existing typedef_list */
-PARAM_LIST append_to_param_list(PARAM_LIST list, TYPE t);
+PARAM_LIST append_to_param_list(PARAM_LIST list, PARAM_LIST t);
 
 /* Function to merge two param lists if separated by semicolon */
 PARAM_LIST merge_param_lists(PARAM_LIST list1, PARAM_LIST list2);

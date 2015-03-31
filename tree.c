@@ -252,12 +252,16 @@ void paramdec(stid_list list, TYPE t)
    message("paramdec");
 }
 
-PARAM_LIST make_new_param_list(TYPE t)
+PARAM_LIST make_new_param_list(PARAM_LIST t)
 {
    message("make new param list");
 }
 
-PARAM_LIST append_to_param_list(PARAM_LIST list, TYPE t)
+PARAM_LIST make_new_param_list_from_ids(stid_item_p list)
+{
+}
+
+PARAM_LIST append_to_param_list(PARAM_LIST list, PARAM_LIST t)
 {
    message("append to param list");
 }

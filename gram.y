@@ -147,7 +147,7 @@ void yyerror(const char *);
 
 %type <y_stid>      identifier new_identifier
 %type <y_string>    new_identifier_1
-%type <y_stid_item> id_list formal_parameter
+%type <y_stid_item> id_list
 
 %type <y_type> typename type_denoter new_ordinal_type subrange_type new_pointer_type pointer_domain_type
 %type <y_type> new_structured_type array_type ordinal_index_type new_procedural_type functiontype
@@ -155,7 +155,7 @@ void yyerror(const char *);
 %type <y_typedef_item> type_definition
 %type <y_type_list>    array_index_list
 
-%type <y_param_list> procedural_type_formal_parameter_list formal_parameter_list procedural_type_formal_parameter 
+%type <y_param_list> procedural_type_formal_parameter_list formal_parameter_list procedural_type_formal_parameter formal_parameter 
 
 %type <y_param_list> optional_procedural_type_formal_parameter_list optional_par_formal_parameter_list
 
@@ -438,10 +438,10 @@ procedural_type_formal_parameter_list:
 
 /* $$ type should be PARAM_LIST. */
 procedural_type_formal_parameter:
-    id_list                      { $$ = make_new_param_list($1); }
-  | id_list ':' typename         { paramdec($1, $3); $$ = make_new_param_list($1); }
-  | LEX_VAR id_list ':' typename { paramdec($2, $4); $$ = make_new_param_list($2); }
-  | LEX_VAR id_list              { $$ = make_new_param_list($2); }
+    id_list                      { $$ = make_new_param_list_from_ids($1); }
+  | id_list ':' typename         { paramdec($1, $3); $$ = make_new_param_list_from_ids($1); }
+  | LEX_VAR id_list ':' typename { paramdec($2, $4); $$ = make_new_param_list_from_ids($2); }
+  | LEX_VAR id_list              { $$ = make_new_param_list_from_ids($2); }
   ;
 
 /* $$ type should be TYPE (y_TYPE). */
@@ -589,8 +589,8 @@ formal_parameter_list:
   ;
 
 formal_parameter:
-    id_list ':' typename { paramdec($1, $3); $$ = $1; }
-  | LEX_VAR id_list ':' typename { paramdec($2, $4); $$ = $2; }
+    id_list ':' typename { paramdec($1, $3); $$ = make_new_param_list_from_ids($1); }
+  | LEX_VAR id_list ':' typename { paramdec($2, $4); $$ = make_new_param_list_from_ids($2); }
   ;
 
 
