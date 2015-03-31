@@ -138,6 +138,31 @@ void process_unresolved_types()
 {
     message("process unresolved types");
     
+    if (unresolveds != NULL)
+    {
+      TYPE_LIST current_item = unresolveds;
+      
+      while (current_item)
+      {
+        ST_ID id;
+        ty_query_ptr(current_item, &id);
+        
+        int ignore = 0;
+        ST_DR aRecord = stdr_lookup(id, &ignore);
+        
+        if (aRecord != NULL)
+        {
+          if (aRecord->tag == TYPENAME)
+          {
+            TYPE theType = aRecord->u.typename.type;
+            
+            ty_resolve_ptr(current_item->type, theType);
+          }
+        }
+        
+        current_item = current_item->next;
+      }
+    }
 }
 
 TYPE get_basic_type(char* typename)
