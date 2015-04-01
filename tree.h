@@ -64,7 +64,7 @@ typedef stid_item_p stid_list;
 stid_list new_stid_list(ST_ID root);
 
 /* Function to append a new ST_ID to an existing list of such items. */
-void append_stid_to_list(stid_list base, ST_ID new_id);
+stid_list append_stid_to_list(stid_list base, ST_ID new_id);
 
 
 

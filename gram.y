@@ -198,7 +198,7 @@ optional_par_id_list:
 /* $$ type should be ST_ID list. */
 id_list:
     new_identifier              { $$ = new_stid_list($1); }
-  | id_list ',' new_identifier  { append_stid_to_list($1, $3); $$ = $1; }
+  | id_list ',' new_identifier  { $$ = append_stid_to_list($1, $3); }
   ;
 
 /* $$ type should be TYPE. */
@@ -417,10 +417,10 @@ pointer_domain_type:
 new_procedural_type:
     LEX_PROCEDURE optional_procedural_type_formal_parameter_list             { 
     /* create new procedure type with param list. */ 
-    $$ = ty_build_func(ty_build_basic(TYVOID), $2, FALSE);
+    $$ = ty_build_func(ty_build_basic(TYVOID), $2, TRUE);
     }
   | LEX_FUNCTION optional_procedural_type_formal_parameter_list functiontype { /* create new functiontype-returning function type with param list. */ 
-  $$ = ty_build_func($3, $2, FALSE);
+  $$ = ty_build_func($3, $2, TRUE);
   }
   ;
 

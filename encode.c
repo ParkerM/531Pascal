@@ -71,6 +71,10 @@ int get_type_size(TYPE type)
     case TYSIGNEDCHAR:
       return 1;
     break;
+
+    case TYUNSIGNEDINT:
+      return 4;
+    break;
     
     case TYSIGNEDLONGINT:
       return 4;
@@ -93,12 +97,13 @@ int get_type_size(TYPE type)
       long low, high;
       TYPE base = ty_query_subrange(type, &low, &high);
       
-      return get_type_size(base)*(high-low+1);
+      return get_type_size(base);
     }
     break;
     
     default:
-      msg("TYPETAG may have undefined size: %d", query);
+      msg("TYPETAG may have undefined size: ");
+      ty_print_typetag(query);
       return 0;
     break;
   }
@@ -124,6 +129,10 @@ int get_type_alignment(TYPE type)
     case TYSIGNEDCHAR:
       return 1;
     break;
+
+    case TYUNSIGNEDINT:
+      return 4;
+    break;
     
     case TYSIGNEDLONGINT:
       return 4;
@@ -146,12 +155,13 @@ int get_type_alignment(TYPE type)
       long low, high;
       TYPE base = ty_query_subrange(type, &low, &high);
       
-      return get_type_alignment(base)*(high-low+1);
+      return get_type_alignment(base);
     }
     break;
     
     default:
-      msg("TYPETAG may have undefined alignment: %d", query);
+      msg("TYPETAG may have undefined alignment: ");
+      ty_print_typetag(query);
       return 0;
     break;
   }

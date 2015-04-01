@@ -77,28 +77,18 @@ stid_list new_stid_list(ST_ID root)
   return value;
 }
 
-void append_stid_to_list(stid_list base, ST_ID new_id)
+stid_list append_stid_to_list(stid_list base, ST_ID new_id)
 {
   //message("append stid to list");
 
-  // Allocate a new stid_item_p item.
-  stid_item_p newItem = (stid_item_p) malloc(sizeof(STID_ITEM));
+  // Allocate a new stid_list.
+  stid_list newItem = (stid_list) malloc(sizeof(STID_ITEM));
   
-  // Explicitly set the next pointer to NULL and set the enrollment_papers.
-  newItem->next = NULL;
+  // Put newItem at the head of base and assign enrollment papers.
+  newItem->next = base;
   newItem->enrollment_papers = new_id;
-  
-  // Now, loop through the list until the last item is found.
-  stid_item_p currentItem = base;
-  
-  while (currentItem->next)
-  {
-      currentItem = currentItem->next;
-  }
-  
-  // Append the newItem to the end of the list.
-  currentItem->next = newItem;
-  
+
+  return newItem;
 }
 
 typedef_item_p make_typedef_node(ST_ID id, TYPE t)
@@ -247,7 +237,6 @@ TYPE create_subrange(num_const_p low, num_const_p high)
   }
 }
 
-<<<<<<< Updated upstream
 BOOLEAN isSimpleType(TYPE t)
 {
   TYPETAG tag = ty_query(t);
@@ -353,13 +342,11 @@ BOOLEAN isDataType(TYPE t)
 
 void paramdec(stid_list list, TYPE t)
 {
-   message("paramdec");
+   //message("paramdec");
 }
 
 PARAM_LIST make_new_param_list(PARAM_LIST t)
 {
-   message("make new param list");
-   
    PARAM_LIST value = (PARAM_LIST) malloc(sizeof(PARAM));
    
    value->id = NULL;
@@ -375,14 +362,12 @@ PARAM_LIST make_new_param_list(PARAM_LIST t)
 
 PARAM_LIST append_to_param_list(PARAM_LIST list, PARAM_LIST p)
 {
-   message("append to param list");
    p->next = list;
    return p;
 }
 
 PARAM_LIST merge_param_lists(PARAM_LIST list1, PARAM_LIST list2)
 {
-    message("merge param lists");
     //go to end of list
     while(list1->next)
     {
@@ -450,7 +435,7 @@ TYPE_LIST append_to_type_list(TYPE_LIST list, TYPE t)
 
     current->next = newNode;
     
-    return current;
+    return list;
 }
 
 void vardec(stid_list list, TYPE t)
