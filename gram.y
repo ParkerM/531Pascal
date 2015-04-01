@@ -432,16 +432,16 @@ optional_procedural_type_formal_parameter_list:
 
 /* $$ type should be PARAM_LIST. */
 procedural_type_formal_parameter_list:
-    procedural_type_formal_parameter { $$ = make_new_param_list($1); }
+    procedural_type_formal_parameter { $$ = $1; }
   | procedural_type_formal_parameter_list semi procedural_type_formal_parameter  { $$ = merge_param_lists($1, $3); } 
   ;
 
 /* $$ type should be PARAM_LIST. */
 procedural_type_formal_parameter:
-    id_list                      { $$ = make_new_param_list_from_ids($1); }
-  | id_list ':' typename         { paramdec($1, $3); $$ = make_new_param_list_from_ids($1); }
-  | LEX_VAR id_list ':' typename { paramdec($2, $4); $$ = make_new_param_list_from_ids($2); }
-  | LEX_VAR id_list              { $$ = make_new_param_list_from_ids($2); }
+    id_list                      { $$ = id_list_to_param_list($1, ty_build_basic(TYVOID), FALSE); }
+  | id_list ':' typename         { $$ = id_list_to_param_list($1, $3, FALSE); }
+  | LEX_VAR id_list ':' typename {  $$ = id_list_to_param_list($2, $4, TRUE); }
+  | LEX_VAR id_list              {  $$ = id_list_to_param_list($2, ty_build_basic(TYVOID), TRUE); }
   ;
 
 /* $$ type should be TYPE (y_TYPE). */
@@ -584,13 +584,13 @@ optional_par_formal_parameter_list:
   ;
 
 formal_parameter_list:
-    formal_parameter { $$ = make_new_param_list($1); }
-  | formal_parameter_list semi formal_parameter { $$ = append_to_param_list($1, $3); }
+    formal_parameter { $$ = $1; }
+  | formal_parameter_list semi formal_parameter { $$ = merge_param_lists($1, $3); }
   ;
 
 formal_parameter:
-    id_list ':' typename { paramdec($1, $3); $$ = make_new_param_list_from_ids($1); }
-  | LEX_VAR id_list ':' typename { paramdec($2, $4); $$ = make_new_param_list_from_ids($2); }
+    id_list ':' typename { $$ =  id_list_to_param_list($1, $3, FALSE); }
+  | LEX_VAR id_list ':' typename { $$ = id_list_to_param_list($2, $4, TRUE); }
   ;
 
 
