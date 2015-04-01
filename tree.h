@@ -91,6 +91,8 @@ TYPE get_basic_type(char*);
    accepted are integer constants. */
 TYPE create_subrange(num_const_p low, num_const_p high);
 
+BOOLEAN isSimpleType(TYPE t);
+BOOLEAN isDataType(TYPE t);
 
 /* Function to create a new param list when a formal parameter is encountered */
 PARAM_LIST make_new_param_list(PARAM_LIST t);

@@ -455,7 +455,7 @@ new_structured_type:
 
 /* $$ type should be TYPE (y_TYPE). */
 array_type:
-    LEX_ARRAY '[' array_index_list ']' LEX_OF type_denoter { $$ = ty_build_array($6, $3); }
+    LEX_ARRAY '[' array_index_list ']' LEX_OF type_denoter { $$ = ty_build_array($6, $3); if(!isDataType($6)) { error("Array type must be data type."); }  }
   ;
 
 /* $$ type should be TYPE_LIST. */
@@ -572,8 +572,8 @@ directive:
   ;
 
 functiontype:
-    /* empty */ { $$ = ty_build_basic(TYVOID); }
-  | ':' typename { $$ = $2; }
+    /* empty */ { $$ = ty_build_basic(TYERROR); error("A function should not be typeless."); }
+  | ':' typename { $$ = $2; if(!isSimpleType($2)) { error("Return type must be simple type."); } }
   ;
 
 /* parameter specification section */

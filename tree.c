@@ -213,7 +213,7 @@ TYPE get_basic_type(char* typename)
       {
         error("Trying to redefine non-type identifier.");
         /* TODO: Keep track of semantic errors. */
-        return NULL;
+        return ty_build_basic(TYERROR);
       }
     }
     else
@@ -239,11 +239,114 @@ TYPE create_subrange(num_const_p low, num_const_p high)
     long low_val = low->v.integer;
     long high_val = high->v.integer;
     
-    TYPE intType = ty_build_basic(TYUNSIGNEDINT);
+    TYPE intType = ty_build_basic(TYSIGNEDLONGINT);
     
     TYPE subrange = ty_build_subrange(intType, low_val, high_val);
     
     return subrange;
+  }
+}
+
+BOOLEAN isSimpleType(TYPE t)
+{
+  TYPETAG tag = ty_query(t);
+  
+  switch (tag)
+  {
+    case TYFLOAT:
+      return TRUE;
+    break;
+    
+    case TYDOUBLE:
+      return TRUE;
+    break;
+    
+    case TYLONGDOUBLE:
+      return TRUE;
+    break;
+    
+    case TYSIGNEDLONGINT:
+      return TRUE;
+    break;
+    
+    case TYSIGNEDSHORTINT:
+      return TRUE;
+    break;
+    
+    case TYSIGNEDINT:
+      return TRUE;
+    break;
+    
+    case TYUNSIGNEDLONGINT:
+      return TRUE;
+    break;
+    
+    case TYUNSIGNEDSHORTINT:
+      return TRUE;
+    break;
+    
+    case TYUNSIGNEDINT:
+      return TRUE; 
+    break;
+    
+    case TYUNSIGNEDCHAR:
+      return TRUE; 
+    break; 
+    
+    case TYSIGNEDCHAR:
+      return TRUE; 
+    break;
+    
+    case TYPTR:
+    {
+      ST_ID ignore;
+      TYPE pointsTo = ty_query_ptr(t, &ignore);
+      
+      return (pointsTo != NULL);
+    }
+    break;
+    
+    default:
+      return FALSE;
+    break;
+  }
+}
+
+BOOLEAN isDataType(TYPE t)
+{
+  if (isSimpleType(t))
+  {
+    return TRUE;
+  }
+  
+  TYPETAG tag = ty_query(t);
+  
+  switch (tag)
+  {
+    case TYFUNC:
+      return FALSE;
+    break;
+    
+    case TYVOID:
+      return FALSE;
+    break;
+    
+    case TYERROR:
+      return FALSE;
+    break;
+    
+    case TYPTR:
+    {
+      ST_ID ignore;
+      TYPE pointsTo = ty_query_ptr(t, &ignore);
+      
+      return (pointsTo != NULL);
+    }
+    break;
+    
+    default:
+      return TRUE;
+    break;
   }
 }
 
