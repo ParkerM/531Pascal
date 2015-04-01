@@ -247,6 +247,7 @@ TYPE create_subrange(num_const_p low, num_const_p high)
   }
 }
 
+<<<<<<< Updated upstream
 BOOLEAN isSimpleType(TYPE t)
 {
   TYPETAG tag = ty_query(t);
@@ -358,20 +359,65 @@ void paramdec(stid_list list, TYPE t)
 PARAM_LIST make_new_param_list(PARAM_LIST t)
 {
    message("make new param list");
+   
+   PARAM_LIST value = (PARAM_LIST) malloc(sizeof(PARAM));
+   
+   value->id = NULL;
+   value->type = t;
+   value->sc = NO_SC;
+   value->err = FALSE;
+   value->is_ref = FALSE;
+   value->next = NULL;
+   value->prev = NULL;
+   
+   return value;
 }
 
-PARAM_LIST make_new_param_list_from_ids(stid_item_p list)
-{
-}
-
-PARAM_LIST append_to_param_list(PARAM_LIST list, PARAM_LIST t)
+PARAM_LIST append_to_param_list(PARAM_LIST list, PARAM_LIST p)
 {
    message("append to param list");
+   p->next = list;
+   return p;
 }
 
 PARAM_LIST merge_param_lists(PARAM_LIST list1, PARAM_LIST list2)
 {
     message("merge param lists");
+    //go to end of list
+    while(list1->next)
+    {
+        list1 = list1->next;
+    }
+    
+    //append list2 onto list1
+    list1->next = list2;
+    return list1;
+}
+
+PARAM_LIST id_list_to_param_list(stid_list idList, TYPE listType, BOOLEAN isRef)
+{
+    //create PARAM_LIST
+    PARAM_LIST list = NULL;
+    
+    //while list is not null
+    while (idList)
+    {
+        if(list == NULL)
+        {
+            list = make_new_param_list(listType);
+        }
+        else
+        {
+            PARAM_LIST newItem = make_new_param_list(listType);
+            list = append_to_param_list(list, newItem);
+            list = list->next;
+        }
+        list->id = idList->enrollment_papers;
+        list->is_ref = isRef;
+        idList = idList->next;
+    }
+    
+    return list;
 }
 
 TYPE_LIST make_new_type_list(TYPE t)

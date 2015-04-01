@@ -100,11 +100,14 @@ PARAM_LIST make_new_param_list(PARAM_LIST t);
 /* Function ot create a new param list from a list of IDs. */
 PARAM_LIST make_new_param_list_from_ids(stid_item_p list);
 
-/* Function to append a TYPE to an existing typedef_list */
-PARAM_LIST append_to_param_list(PARAM_LIST list, PARAM_LIST t);
+/* Function to append a PARAM to an existing param_list */
+PARAM_LIST append_to_param_list(PARAM_LIST list, PARAM_LIST p);
 
 /* Function to merge two param lists if separated by semicolon */
 PARAM_LIST merge_param_lists(PARAM_LIST list1, PARAM_LIST list2);
+
+/* Function to convert an ST_ID list to a PARAM_LIST of the supplied type */
+PARAM_LIST id_list_to_param_list(stid_list idList, TYPE listType, BOOLEAN isVar);
 
 /* Function to create a new type list when an ordinal index type is encountered */
 TYPE_LIST make_new_type_list(TYPE t);
