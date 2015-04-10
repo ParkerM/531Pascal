@@ -21,3 +21,24 @@ At all levels you are responsible for detecting duplicate declarations. At the 1
 Your compiler should be capable of detecting multiple semantic errors in one file. You can make arbitrary decisions about how to proceed when errors occur (for instance, with a duplicate declaration you might decide to ignore the second declaration). The important point is to do something so you can proceed (without causing a later bus error, segmentation fault, etc. during compilation).
 
 You may allow the compiler to stop processing with the first syntax error. A syntax error is defined with respect to the distributed Pascal grammar (gram.y, see next paragraph).
+
+---
+#### Project 2:
+
+Process Pascal expressions, assignment statements, and procedure call statements, as well as procedure and function definitions.
+
+**To receive 80% of the credit**: You must be able to handle expressions (including calls to external functions without arguments), assignment statements, and statements that are calls to external procedures without arguments, generating the assembly code for expression evaluation, assignment, and external calls.
+
+You must be able to process External procedure and function declarations without parameters, such as
+
+```
+Procedure Foo; External;
+Function Bar : Real; External;
+```
+
+This includes determining the function return type and installing the procedure/function in the symbol table. You are only responsible for handling functions that return `unsigned char` (for Char), `long` (for Integer), `float` (for Single), `double` (for Real), and `signed char` (for Boolean). You should treat procedures as functions returning `void`. 
+
+**To receive 100% of the credit**: In addition to obtaining the 80% level, you must be able to allow actual arguments in calls to external procedures and functions (without type-checking the arguments), and you must handle global procedure and function definitions without any local objects (i.e., no formal parameters, local types, local variables, or local procedures or functions). For a procedure/function call with arguments, you must generate the assembly code to evaluate the arguments and place them on the actual argument list for the function to be called. All arguments to external functions are r-values (pass-by-value).
+
+**To receive 10% EXTRA credit**: In addition to obtaining the 100% level, you must implement procedure/function definitions with formal parameters and local variables. This means you must support formal parameter and local variable declarations, as well as references to these within expression statements. You only need to handle parameter and local variable declarations of type `Integer`, `Char`, `Single`, `Boolean`, and `Real`.
+
