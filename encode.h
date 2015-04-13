@@ -3,6 +3,7 @@
 
 #include "backend-x86.h"
 #include "defs.h"
+#include "expr.h"
 #include "types.h"
 #include "symtab.h"
 #include "message.h"
