@@ -1,5 +1,13 @@
 #include "encode.h"
 
+void encode_arith_expr(EXPR expr);
+void encode_assn_expr(EXPR expr);
+void encode_compare_expr(EXPR expr);
+void encode_signed_expr(EXPR expr);
+void encode_unary_func_expr(EXPR expr);
+void encode_variable_expr(EXPR expr);
+
+
 void encode(ST_ID id)
 {
   int blockNum = 0;
@@ -170,7 +178,7 @@ int get_type_alignment(TYPE type)
 /* -----=====----- EXPRESSIONS -----=====----- */
 void encode_expression(EXPR expr)
 {
-  switch (expr.type)
+  switch (expr->type)
   {
     case E_ASSIGN:
       break;
@@ -179,8 +187,10 @@ void encode_expression(EXPR expr)
     case E_SIGN:
       break;
     case E_INTCONST:
+      b_push_const_int(expr->u.integer);
       break;
     case E_REALCONST:
+      b_push_const_double(expr->u.real);
       break;
     case E_COMPR:
       break;
@@ -193,4 +203,27 @@ void encode_expression(EXPR expr)
       break;
   }
 }
+
+void encode_arith_expr(EXPR expr);
+{
+}
+
+void encode_assn_expr(EXPR expr);
+{
+}
+
+void encode_compare_expr(EXPR expr);
+{
+}
+
+void encode_signed_expr(EXPR expr);
+{
+}
+
+void encode_unary_func_expr(EXPR expr);
+{
+}
+
+void encode_variable_expr(EXPR expr)
+{
 }

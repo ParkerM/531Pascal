@@ -20,13 +20,28 @@
 #include "tree.h"
 #include "types.h"
 
+/* typedef enum EXPRTAG
+ *
+ * This enumeration describes the various types of expressions we may hope to encounter:
+ *
+ *     E_ASSIGN     - An assignment statement.
+ *     E_ARITH      - An arithmetic statement (involving +, -, *, /, div, mod).
+ *     E_SIGN       - A unary sign statement (i.e. unary + or -).
+ *     E_INTCONST   - An Integer constant.
+ *     E_REALCONST  - A Real or Single constant.
+ *     E_COMPR      - A comparison expression (involving >, <, =, <>, <=, >=).
+ *     E_UNFUNC     - A unary function (ord, chr, succ, pred).
+ *     E_VAR        - A [global] variable. TODO: update for 100% level.
+ */
 typedef enum EXPRTAG {E_ASSIGN, E_ARITH, E_SIGN, E_INTCONST, E_REALCONST, E_COMPR, E_UNFUNC, E_VAR}; 
 
 typedef struct expression
 {
-  EXPRTAG type;
-  struct expression *left;
-  struct expression *right;
+  EXPRTAG expr_tag;
+  TYPE    expr_type;
+  struct  expression *left;
+  struct  expression *right;
+  
   union
   {
   	long integer;
