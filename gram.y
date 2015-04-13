@@ -74,10 +74,13 @@ void yyerror(const char *);
     ST_ID           y_stid;
     
     typedef_item_p  y_typedef_item;
-    TYPE_LIST	      y_type_list;
+    TYPE_LIST	    y_type_list;
     TYPE            y_type;
 
-    PARAM_LIST 		  y_param_list;
+    expr_item_p		y_expr_item;
+    expr_list 		y_expr_list;
+
+    PARAM_LIST 		y_param_list;
     
     num_const_p     y_num_const;
 }
@@ -156,8 +159,16 @@ void yyerror(const char *);
 %type <y_type_list>    array_index_list
 
 %type <y_param_list> procedural_type_formal_parameter_list formal_parameter_list procedural_type_formal_parameter formal_parameter 
-
 %type <y_param_list> optional_procedural_type_formal_parameter_list optional_par_formal_parameter_list
+
+%type <y_expr_item> actual_parameter assignment_or_call_statement variable_or_function_access_maybe_assignment
+%type <y_expr_item> rest_of_statement standard_procedure_statement index_expression_item
+%type <y_expr_item> static_expression boolean_expression expression simple_expression
+%type <y_expr_item> term signed_primary primary signed_factor factor variable_or_function_access
+%type <y_expr_item> variable_or_function_access_no_standard_function variable_or_function_access_no_id
+%type <y_expr_item> standard_functions optional_par_actual_parameter
+
+%type <y_expr_list> index_expression_list actual_parameter_list optional_par_actual_parameter_list
 
 %type <y_num_const> constant number unsigned_number
 %type <y_cint> sign
@@ -709,12 +720,12 @@ empty_statement:
 
 optional_par_actual_parameter_list:
     /* empty */
-  | '(' actual_parameter_list ')'
+  | '(' actual_parameter_list ')'	{ $$ = $2; }
   ;
 
 actual_parameter_list:
-    actual_parameter
-  | actual_parameter_list ',' actual_parameter
+    actual_parameter 							{ $$ = new_expr_list($1); }
+  | actual_parameter_list ',' actual_parameter 	{ $$ = append_to_expr_list($1, $3); }
   ;
 
 actual_parameter:
