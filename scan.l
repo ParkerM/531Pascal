@@ -13,6 +13,7 @@
 #include "symtab.h"
 #include "message.h"
 #include "tree.h"
+#include "expr.h"
 /* defined in defs.h */
 #include BACKEND_HEADER_FILE
 #include "y.tab.h"

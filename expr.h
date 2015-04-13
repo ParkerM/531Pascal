@@ -22,10 +22,24 @@
 
 typedef enum EXPRTAG {E_ASSIGN, E_ARITH, E_SIGN, E_INTCONST, E_REALCONST, E_COMPR, E_UNFUNC, E_VAR}; 
 
-typedef struct Expression
+typedef struct expression
 {
   EXPRTAG type;
+  struct expression *left;
+  struct expression *right;
   union
   {
   } u;
-} Expression, *EXPR;
+} expression, *EXPR;
+
+typedef struct expr_list
+{
+    expression *base;
+    struct expr_list *next;
+} *EXPR_LIST;
+
+/* Create a new list of expression nodes */
+expr_list new_expr_list(expression item);
+
+/* Append an expression node to an existing expression list */
+expr_list append_to_expr_list(EXPR_LIST base, expression newItem);

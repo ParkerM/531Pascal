@@ -15,3 +15,13 @@
  */
  
 #include "expr.h"
+
+expr_list new_expr_list(expression item)
+{
+
+}
+
+expr_list append_to_expr_list(EXPR_LIST base, expression newItem)
+{
+
+}

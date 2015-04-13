@@ -50,6 +50,7 @@
 #define YYDEBUG 1
 
 #include "tree.h"
+#include "expr.h"
 #include "types.h"
 
 void set_yydebug(int);
@@ -77,8 +78,8 @@ void yyerror(const char *);
     TYPE_LIST	    y_type_list;
     TYPE            y_type;
 
-    expr_item_p		y_expr_item;
-    expr_list 		y_expr_list;
+    EXPR			y_expr;
+    EXPR_LIST 		y_expr_list;
 
     PARAM_LIST 		y_param_list;
     
@@ -161,12 +162,12 @@ void yyerror(const char *);
 %type <y_param_list> procedural_type_formal_parameter_list formal_parameter_list procedural_type_formal_parameter formal_parameter 
 %type <y_param_list> optional_procedural_type_formal_parameter_list optional_par_formal_parameter_list
 
-%type <y_expr_item> actual_parameter assignment_or_call_statement variable_or_function_access_maybe_assignment
-%type <y_expr_item> rest_of_statement standard_procedure_statement index_expression_item
-%type <y_expr_item> static_expression boolean_expression expression simple_expression
-%type <y_expr_item> term signed_primary primary signed_factor factor variable_or_function_access
-%type <y_expr_item> variable_or_function_access_no_standard_function variable_or_function_access_no_id
-%type <y_expr_item> standard_functions optional_par_actual_parameter
+%type <y_expr> actual_parameter assignment_or_call_statement variable_or_function_access_maybe_assignment
+%type <y_expr> rest_of_statement standard_procedure_statement index_expression_item
+%type <y_expr> static_expression boolean_expression expression simple_expression
+%type <y_expr> term signed_primary primary signed_factor factor variable_or_function_access
+%type <y_expr> variable_or_function_access_no_standard_function variable_or_function_access_no_id
+%type <y_expr> standard_functions optional_par_actual_parameter
 
 %type <y_expr_list> index_expression_list actual_parameter_list optional_par_actual_parameter_list
 
