@@ -94,6 +94,22 @@ TYPE create_subrange(num_const_p low, num_const_p high);
 BOOLEAN isSimpleType(TYPE t);
 BOOLEAN isDataType(TYPE t);
 
+// ***** EXPRESSION-RELATED CONSTRUCTIONS ***** //
+typedef struct expr_item
+{
+    TYPE type;
+    struct expr_item *left;
+    struct expr_item *right;
+} EXPR_ITEM, *expr_item_p;
+
+typedef expr_item_p expr_list;
+
+/* Create a new list of expression nodes */
+expr_list new_expr_list(EXPR_ITEM item, TYPE t);
+
+/* Append an expression node to an existing expression list */
+expr_list append_to_expr_list(expr_list base, EXPR_ITEM newItem);
+
 /* Function to create a new param list when a formal parameter is encountered */
 PARAM_LIST make_new_param_list(PARAM_LIST t);
 
