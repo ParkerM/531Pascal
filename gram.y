@@ -720,12 +720,12 @@ empty_statement:
 
 optional_par_actual_parameter_list:
     /* empty */
-  | '(' actual_parameter_list ')'
+  | '(' actual_parameter_list ')'	{ $$ = $2; }
   ;
 
 actual_parameter_list:
-    actual_parameter
-  | actual_parameter_list ',' actual_parameter
+    actual_parameter 							{ $$ = new_expr_list($1); }
+  | actual_parameter_list ',' actual_parameter 	{ $$ = append_to_expr_list($1, $3); }
   ;
 
 actual_parameter:

@@ -102,10 +102,14 @@ typedef struct expr_item
     struct expr_item *right;
 } EXPR_ITEM, *expr_item_p;
 
-typedef expr_item_p expr_list;
+typedef struct expr_list_item
+{
+    EXPR_ITEM *base;
+    struct expr_list_item *next;
+} *expr_list;
 
 /* Create a new list of expression nodes */
-expr_list new_expr_list(EXPR_ITEM item, TYPE t);
+expr_list new_expr_list(EXPR_ITEM item);
 
 /* Append an expression node to an existing expression list */
 expr_list append_to_expr_list(expr_list base, EXPR_ITEM newItem);

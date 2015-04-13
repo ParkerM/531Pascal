@@ -237,14 +237,14 @@ TYPE create_subrange(num_const_p low, num_const_p high)
   }
 }
 
-expr_list new_expr_list(EXPR_ITEM item, TYPE t)
+expr_list new_expr_list(EXPR_ITEM item)
 {
 
 }
 
 expr_list append_to_expr_list(expr_list base, EXPR_ITEM newItem)
 {
-  
+
 }
 
 BOOLEAN isSimpleType(TYPE t)
