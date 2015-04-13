@@ -95,7 +95,7 @@ BOOLEAN isSimpleType(TYPE t);
 BOOLEAN isDataType(TYPE t);
 
 /* Function to create a new param list when a formal parameter is encountered */
-PARAM_LIST make_new_param_list(PARAM_LIST t);
+PARAM_LIST make_new_param_list(TYPE t);
 
 /* Function ot create a new param list from a list of IDs. */
 PARAM_LIST make_new_param_list_from_ids(stid_item_p list);

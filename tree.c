@@ -345,7 +345,7 @@ void paramdec(stid_list list, TYPE t)
    //message("paramdec");
 }
 
-PARAM_LIST make_new_param_list(PARAM_LIST t)
+PARAM_LIST make_new_param_list(TYPE t)
 {
    PARAM_LIST value = (PARAM_LIST) malloc(sizeof(PARAM));
    
