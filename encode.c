@@ -166,3 +166,31 @@ int get_type_alignment(TYPE type)
     break;
   }
 }
+
+/* -----=====----- EXPRESSIONS -----=====----- */
+void encode_expression(EXPR expr)
+{
+  switch (expr.type)
+  {
+    case E_ASSIGN:
+      break;
+    case E_ARITH:
+      break;
+    case E_SIGN:
+      break;
+    case E_INTCONST:
+      break;
+    case E_REALCONST:
+      break;
+    case E_COMPR:
+      break;
+    case E_UNFUNC:
+      break;
+    case E_VAR:
+      break;
+    default:
+      bug("Encountered unknown expression type.");
+      break;
+  }
+}
+}
