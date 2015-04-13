@@ -29,6 +29,8 @@ typedef struct expression
   struct expression *right;
   union
   {
+  	long integer;
+  	double real;
   } u;
 } expression, *EXPR;
 
@@ -36,10 +38,13 @@ typedef struct expr_list
 {
     expression *base;
     struct expr_list *next;
-} *EXPR_LIST;
+} expr_list_node, *EXPR_LIST;
+
+/* New assignment expression */
+EXPR new_expr_assign(EXPR left, EXPR right);
 
 /* Create a new list of expression nodes */
-expr_list new_expr_list(expression item);
+EXPR_LIST new_expr_list(expression item);
 
 /* Append an expression node to an existing expression list */
-expr_list append_to_expr_list(EXPR_LIST base, expression newItem);
+EXPR_LIST append_to_expr_list(EXPR_LIST base, expression newItem);

@@ -16,12 +16,31 @@
  
 #include "expr.h"
 
-expr_list new_expr_list(expression item)
-{
-
+/* New assignment expression */
+EXPR new_expr_assign(EXPR left, EXPR right) {
+	
 }
 
-expr_list append_to_expr_list(EXPR_LIST base, expression newItem)
+EXPR_LIST new_expr_list(expression item)
 {
+	//allocate new EXPR_LIST
+	EXPR_LIST list = (EXPR_LIST) malloc(sizeof(expr_list_node));
 
+	//set next to null, set base node equal to item
+	list->next = NULL;
+	list->base = item;
+
+	return list;
+}
+
+EXPR_LIST append_to_expr_list(EXPR_LIST list, expression newItem)
+{
+	//allocate new EXPR_LIST
+	EXPR_LIST newList = (EXPR_LIST) malloc(sizeof(expr_list_node));
+
+	//put newList at the head of list and assign the expression
+	newList->next = list;
+	newList->base = newItem;
+
+	return newList;
 }

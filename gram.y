@@ -736,7 +736,8 @@ actual_parameter:
 /* ASSIGNMENT and procedure calls */
 
 assignment_or_call_statement:
-    variable_or_function_access_maybe_assignment rest_of_statement
+    variable_or_function_access_maybe_assignment rest_of_statement { if ($2 != NULL) $$ = new_expr_assign($1, $2); 
+    																  else; //call statement}
   ;
 
 variable_or_function_access_maybe_assignment:
@@ -746,8 +747,8 @@ variable_or_function_access_maybe_assignment:
   ;
 
 rest_of_statement:
-    /* Empty */
-  | LEX_ASSIGN expression
+    /* Empty */			  { $$ = NULL; }
+  | LEX_ASSIGN expression { $$ = $2; }
   ;
 
 standard_procedure_statement:
