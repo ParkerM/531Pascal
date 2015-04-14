@@ -2,6 +2,7 @@
 
 void encode_arith_expr(EXPR expr);
 void encode_assn_expr(EXPR expr);
+void encode_cast_expr(EXPR expr);
 void encode_compare_expr(EXPR expr);
 void encode_signed_expr(EXPR expr);
 void encode_unary_func_expr(EXPR expr);
@@ -178,13 +179,16 @@ int get_type_alignment(TYPE type)
 /* -----=====----- EXPRESSIONS -----=====----- */
 void encode_expression(EXPR expr)
 {
-  switch (expr->type)
+  switch (expr->expr_tag)
   {
     case E_ASSIGN:
+      encode_assn_expr(expr);
       break;
     case E_ARITH:
+      encode_arith_expr(expr);
       break;
     case E_SIGN:
+      encode_signed_expr(expr);
       break;
     case E_INTCONST:
       b_push_const_int(expr->u.integer);
@@ -193,10 +197,16 @@ void encode_expression(EXPR expr)
       b_push_const_double(expr->u.real);
       break;
     case E_COMPR:
+      encode_compare_expr(expr);
       break;
     case E_UNFUNC:
+      encode_unary_func_expr(expr);
       break;
     case E_VAR:
+      encode_variable_expr(expr);
+      break;
+    case E_CAST:
+      encode_cast_expr(expr);
       break;
     default:
       bug("Encountered unknown expression type.");
@@ -204,26 +214,165 @@ void encode_expression(EXPR expr)
   }
 }
 
-void encode_arith_expr(EXPR expr);
+void encode_arith_expr(EXPR expr)
 {
+  encode_expression(expr->left);
+  encode_expression(expr->right);
+  
+  switch (expr->u.arith_tag)
+  {
+    case AR_ADD:
+      b_arith_rel_op(B_ADD, expr->expr_type);
+      break;
+    case AR_SUB:
+      b_arith_rel_op(B_SUB, expr->expr_type);
+      break;
+    case AR_MULT:
+      b_arith_rel_op(B_MULT, expr->expr_type);
+      break;
+    case AR_IDIV:
+      if (expr->expr_type != TYSIGNEDLONGINT)
+      {
+        fatal("An integer division expression is not of type Integer!");
+      }
+      else
+      {
+        b_arith_rel_op(B_DIV, TYSIGNEDLONGINT);
+      }
+      break;
+    case AR_RDIV:
+      if (expr->expr_type != TYDOUBLE || expr->expr_type != TYFLOAT)
+      {
+        fatal("A division expression is not of type Real or Single!");
+      }
+      else
+      {
+        b_arith_rel_op(B_DIV, expr->expr_type);
+      }
+      break;
+    case AR_MOD:
+      b_arith_rel_op(B_MOD, expr->expr_type);
+      break;
+    default:
+      error("Unknown ARITH TAG encountered.");
+      break;
+  }
 }
 
-void encode_assn_expr(EXPR expr);
+void encode_assn_expr(EXPR expr)
 {
+  encode_expression(expr->left);
+  encode_expression(expr->right);
+  
+  b_assign(expr->expr_type);
+  
+  b_pop();
 }
 
-void encode_compare_expr(EXPR expr);
+void encode_cast_expr(EXPR expr)
 {
+  //encode_expression(expr->left) //Which do we use for unary?
+  
+  switch (expr->u.cast_tag)
+  {
+    case CT_SGL_REAL:
+      b_convert(TYFLOAT, TYDOUBLE);
+      break;
+    case CT_REAL_SGL:
+      b_convert(TYDOUBLE, TYFLOAT);
+      break;
+    case CT_INT_REAL:
+      b_convert(TYSIGNEDLONGINT, TYDOUBLE);
+      break;
+    case CT_LVAL_RVAL:
+      b_deref(expr->expr_type);
+      break;
+    default:
+      bug("Unknown CAST TAG encountered.");
+      break;
+  }
 }
 
-void encode_signed_expr(EXPR expr);
+void encode_compare_expr(EXPR expr)
 {
+  if (expr->expr_type != TYSIGNEDCHAR)
+  {
+    fatal("Boolean expression is not of type TYSIGNEDCHAR.");
+  }
+  
+  encode_expression(expr->left);
+  encode_expression(expr->right);
+  
+  switch (expr->u.compr_tag)
+  {
+    case CM_EQUAL:
+      b_arith_rel_op(B_EQ, TYSIGNEDCHAR);
+      break;
+    case CM_NEQUAL:
+      b_arith_rel_op(B_NE, TYSIGNEDCHAR);
+      break;
+    case CM_LESS:
+      b_arith_rel_op(B_LT, TYSIGNEDCHAR);
+      break;
+    case CM_GTEQL:
+      b_arith_rel_op(B_GE, TYSIGNEDCHAR);
+      break;
+    case CM_GREAT:
+      b_arith_rel_op(B_GT, TYSIGNEDCHAR);
+      break;
+    case CM_LSEQL:
+      b_arith_rel_op(B_LE, TYSIGNEDCHAR);
+      break;
+    default:
+      bug("Unknown COMPR TAG encountered.");
+      break;
+  }
 }
 
-void encode_unary_func_expr(EXPR expr);
+void encode_signed_expr(EXPR expr)
 {
+  //encode_expression(expr->left) //Which do we use for unary?
+  
+  switch (expr->u.sign_tag)
+  {
+    case SI_PLUS:
+      /* No op */
+      break;
+    case SI_MINUS:
+      b_negate(expr->expr_type);
+      break;
+    default:
+      bug("Unknown SIGN TAG encountered.");
+  }
+}
+
+/**
+ * TODO Verify with Fenner that these are valid operations.
+ */
+void encode_unary_func_expr(EXPR expr)
+{
+  //encode_expression(expr->left) //Which do we use for unary?
+  
+  switch (expr->u.unfunc_tag)
+  {
+    case UF_ORD:
+      b_convert(expr->expr_type, TYSIGNEDLONGINT);
+      break;
+    case UF_CHR:
+      b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
+      break;
+    case UF_SUCC:
+      b_inc_dec(expr->expr_type, B_PRE_INC, 0);
+      break;
+    case UF_PRED:
+      b_inc_dec(expr->expr_type, B_PRE_DEC, 0);
+      break;
+  } 
 }
 
 void encode_variable_expr(EXPR expr)
 {
+  char* gbl_var_id = st_get_id_str(expr->u.var_id);
+  
+  b_push_ext_addr(gbl_var_id);
 }

@@ -21,7 +21,7 @@ EXPR new_expr_assign(EXPR left, EXPR right) {
 	
 }
 
-EXPR_LIST new_expr_list(expression item)
+EXPR_LIST new_expr_list(EXPR item)
 {
 	//allocate new EXPR_LIST
 	EXPR_LIST list = (EXPR_LIST) malloc(sizeof(expr_list_node));
@@ -33,7 +33,7 @@ EXPR_LIST new_expr_list(expression item)
 	return list;
 }
 
-EXPR_LIST append_to_expr_list(EXPR_LIST list, expression newItem)
+EXPR_LIST append_to_expr_list(EXPR_LIST list, EXPR newItem)
 {
 	//allocate new EXPR_LIST
 	EXPR_LIST newList = (EXPR_LIST) malloc(sizeof(expr_list_node));

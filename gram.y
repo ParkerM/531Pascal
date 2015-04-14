@@ -737,11 +737,11 @@ actual_parameter:
 
 assignment_or_call_statement:
     variable_or_function_access_maybe_assignment rest_of_statement { if ($2 != NULL) $$ = new_expr_assign($1, $2); 
-    																  else; //call statement}
+    																  else; /* call statement*/ }
   ;
 
 variable_or_function_access_maybe_assignment:
-    identifier
+    identifier 
   | address_operator variable_or_function_access
   | variable_or_function_access_no_id
   ;

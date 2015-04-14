@@ -14,10 +14,13 @@
  * Purpose: CSCE 531 (Compiler Construction) Project
  */
 
-#include "encode.h"
+#ifndef __EXPR_H
+#define __EXPR_H
+
+#include <stdlib.h>
+
 #include "message.h"
 #include "symtab.h"
-#include "tree.h"
 #include "types.h"
 
 /* typedef enum EXPRTAG
@@ -32,20 +35,86 @@
  *     E_COMPR      - A comparison expression (involving >, <, =, <>, <=, >=).
  *     E_UNFUNC     - A unary function (ord, chr, succ, pred).
  *     E_VAR        - A [global] variable. TODO: update for 100% level.
+ *     E_CAST       - Inserted to cast types prior to operation.
  */
-typedef enum EXPRTAG {E_ASSIGN, E_ARITH, E_SIGN, E_INTCONST, E_REALCONST, E_COMPR, E_UNFUNC, E_VAR}; 
+typedef enum {E_ASSIGN, E_ARITH, E_SIGN, E_INTCONST, E_REALCONST, E_COMPR, E_UNFUNC, E_VAR, E_CAST} EXPRTAG; 
+
+/* typedef enum ARITHTAG
+ *
+ * This enumeration differentiates the arithmetic operations.
+ *
+ *     AR_ADD  - Addition
+ *     AR_SUM  - Subtraction
+ *     AR_MULT - Multiplication
+ *     AR_IDIV - Integer division ('div')
+ *     AR_RDIV - Real division    ('/')
+ *     AR_MOD  - Modulo division  ('mod')
+ */
+typedef enum {AR_ADD, AR_SUB, AR_MULT, AR_IDIV, AR_RDIV, AR_MOD} ARITHTAG;
+
+/* typedef enum SIGNTAG
+ *
+ * This enumeration differentiates the unary sign operations.
+ *
+ *     SI_PLUS  - Unary plus
+ *     SI_MINUS - Unary minus (negation)
+ */
+typedef enum {SI_PLUS, SI_MINUS} SIGNTAG;
+
+/* typedef enum COMPRTAG
+ *
+ * This enumeration differentiates the comparison operations.
+ *
+ *     CM_EQUAL  - Equality relation ('=')
+ *     CM_LESS   - Lesser than relation
+ *     CM_GREAT  - Greated than relation
+ *     CM_NEQUAL - Non-equality relation ('<>')
+ *     CM_LSEQL  - Lesser than or equality relation
+ *     CM_GTEQL  - Greater than or equality relation
+ */
+typedef enum {CM_EQUAL, CM_LESS, CM_GREAT, CM_NEQUAL, CM_LSEQL, CM_GTEQL} COMPRTAG;
+
+/* typedef enum UNFUNCTAG
+ *
+ * This enumeration differentiates the unary function operations.
+ *
+ *     UF_ORD  - ord() [Char -> Integer]
+ *     UF_CHR  - chr() [Integer -> Char]
+ *     UF_SUCC - succ() [Successor function]
+ *     UF_PRED - pred() [Predecessor function]
+ */
+typedef enum {UF_ORD, UF_CHR, UF_SUCC, UF_PRED} UNFUNCTAG;
+
+/* typedef enum CASTTAG
+ *
+ * This enumeration differentiates the various type conversions that my occur.
+ *
+ *     CT_SGL_REAL  - Upconverts a Single to a Real.
+ *     CT_REAL_SGL  - Downconverts a Real to a Single.
+ *     CT_INT_REAL  - Converts an Integer to a Real.
+ *     CT_LVAL_RVAL - Derefs an l-value into an r-value.
+ */
+typedef enum {CT_SGL_REAL, CT_REAL_SGL, CT_INT_REAL, CT_LVAL_RVAL} CASTTAG;
 
 typedef struct expression
 {
-  EXPRTAG expr_tag;
-  TYPE    expr_type;
-  struct  expression *left;
-  struct  expression *right;
+  EXPRTAG expr_tag;  /* What sort of expr it is. */
+  TYPETAG expr_type; /* The expr's value type. */
+  struct  expression *left; /* Left child */
+  struct  expression *right;/* Right child */
   
   union
   {
   	long integer;
   	double real;
+  	
+  	ARITHTAG arith_tag;
+  	SIGNTAG sign_tag;
+  	COMPRTAG compr_tag;
+  	UNFUNCTAG unfunc_tag;
+  	CASTTAG cast_tag;
+  	
+  	ST_ID var_id;
   } u;
 } expression, *EXPR;
 
@@ -59,7 +128,9 @@ typedef struct expr_list
 EXPR new_expr_assign(EXPR left, EXPR right);
 
 /* Create a new list of expression nodes */
-EXPR_LIST new_expr_list(expression item);
+EXPR_LIST new_expr_list(EXPR item);
 
 /* Append an expression node to an existing expression list */
-EXPR_LIST append_to_expr_list(EXPR_LIST base, expression newItem);
+EXPR_LIST append_to_expr_list(EXPR_LIST base, EXPR newItem);
+
+#endif
