@@ -37,7 +37,7 @@
  *     E_VAR        - A [global] variable. TODO: update for 100% level.
  *     E_CAST       - Inserted to cast types prior to operation.
  */
-typedef enum {E_ASSIGN, E_ARITH, E_SIGN, E_INTCONST, E_REALCONST, E_COMPR, E_UNFUNC, E_VAR, E_CAST} EXPRTAG; 
+typedef enum {E_ASSIGN, E_ARITH, E_SIGN, E_INTCONST, E_REALCONST, E_CHARCONST, E_COMPR, E_UNFUNC, E_VAR, E_CAST} EXPRTAG; 
 
 /* typedef enum ARITHTAG
  *
@@ -94,19 +94,20 @@ typedef enum {UF_ORD, UF_CHR, UF_SUCC, UF_PRED} UNFUNCTAG;
  *     CT_INT_REAL  - Converts an Integer to a Real.
  *     CT_LVAL_RVAL - Derefs an l-value into an r-value.
  */
-typedef enum {CT_SGL_REAL, CT_REAL_SGL, CT_INT_REAL, CT_LVAL_RVAL} CASTTAG;
+typedef enum {CT_SGL_REAL, CT_REAL_SGL, CT_INT_REAL, CT_LDEREF} CASTTAG;
 
 typedef struct expression
 {
   EXPRTAG expr_tag;  /* What sort of expr it is. */
   TYPETAG expr_type; /* The expr's value type. */
-  struct  expression *left; /* Left child */
-  struct  expression *right;/* Right child */
+  struct  expression *left;  /* Left child */
+  struct  expression *right; /* Right child and the branch for unary ops.*/
   
   union
   {
   	long integer;
   	double real;
+  	char character;
   	
   	ARITHTAG arith_tag;
   	SIGNTAG sign_tag;

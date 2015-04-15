@@ -8,6 +8,9 @@ void encode_signed_expr(EXPR expr);
 void encode_unary_func_expr(EXPR expr);
 void encode_variable_expr(EXPR expr);
 
+void encode_successor_func(EXPR expr);
+void encode_predecessor_func(EXPR expr);
+
 
 void encode(ST_ID id)
 {
@@ -196,6 +199,10 @@ void encode_expression(EXPR expr)
     case E_REALCONST:
       b_push_const_double(expr->u.real);
       break;
+    case E_CHARCONST:
+      b_push_const_int(expr->u.character);
+      b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
+      break;
     case E_COMPR:
       encode_compare_expr(expr);
       break;
@@ -271,7 +278,7 @@ void encode_assn_expr(EXPR expr)
 
 void encode_cast_expr(EXPR expr)
 {
-  //encode_expression(expr->left) //Which do we use for unary?
+  encode_expression(expr->right);
   
   switch (expr->u.cast_tag)
   {
@@ -284,7 +291,7 @@ void encode_cast_expr(EXPR expr)
     case CT_INT_REAL:
       b_convert(TYSIGNEDLONGINT, TYDOUBLE);
       break;
-    case CT_LVAL_RVAL:
+    case CT_LDEREF:
       b_deref(expr->expr_type);
       break;
     default:
@@ -331,7 +338,7 @@ void encode_compare_expr(EXPR expr)
 
 void encode_signed_expr(EXPR expr)
 {
-  //encode_expression(expr->left) //Which do we use for unary?
+  encode_expression(expr->right);
   
   switch (expr->u.sign_tag)
   {
@@ -346,26 +353,27 @@ void encode_signed_expr(EXPR expr)
   }
 }
 
-/**
- * TODO Verify with Fenner that these are valid operations.
- */
 void encode_unary_func_expr(EXPR expr)
 {
-  //encode_expression(expr->left) //Which do we use for unary?
-  
   switch (expr->u.unfunc_tag)
   {
     case UF_ORD:
-      b_convert(expr->expr_type, TYSIGNEDLONGINT);
+      encode_expression(expr->right);
+      
+      if (expr->right->expr_type != TYSIGNEDLONGINT)
+      {
+        b_convert(expr->right->expr_type, TYSIGNEDLONGINT);
+      }
       break;
     case UF_CHR:
+      encode_expression(expr->right);
       b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
       break;
     case UF_SUCC:
-      b_inc_dec(expr->expr_type, B_PRE_INC, 0);
+      encode_successor_func(expr->right);
       break;
     case UF_PRED:
-      b_inc_dec(expr->expr_type, B_PRE_DEC, 0);
+      encode_predecessor_func(expr->right);
       break;
   } 
 }
@@ -375,4 +383,86 @@ void encode_variable_expr(EXPR expr)
   char* gbl_var_id = st_get_id_str(expr->u.var_id);
   
   b_push_ext_addr(gbl_var_id);
+}
+
+void encode_successor_func(EXPR child_expr)
+{
+  switch (child_expr->expr_tag)
+  {
+    case E_VAR:
+      {
+        encode_expression(child_expr);
+        b_deref(child_expr->expr_type);
+        if (child_expr->expr_type == TYUNSIGNEDCHAR)
+        {
+          b_convert(TYUNSIGNEDCHAR, TYSIGNEDLONGINT);
+          b_push_const_int(1);
+          b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
+          b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
+        }
+        else
+        {
+          b_push_const_int(1);
+          b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
+        }
+      }
+      break;
+    case E_CHARCONST:
+      {
+        encode_expression(child_expr);
+        b_convert(TYUNSIGNEDCHAR, TYSIGNEDLONGINT);
+        b_push_const_int(1);
+        b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
+        b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
+      }
+      break;
+    case E_INTCONST:
+      {
+        b_push_const_int(child_expr->u.integer + 1);
+      }
+      break;
+    default:
+      bug("Successor needs an ordinal type!");
+  }
+}
+
+void encode_predecessor_func(EXPR child_expr)
+{
+  switch (child_expr->expr_tag)
+  {
+    case E_VAR:
+      {
+        encode_expression(child_expr);
+        b_deref(child_expr->expr_type);
+        if (child_expr->expr_type == TYUNSIGNEDCHAR)
+        {
+          b_convert(TYUNSIGNEDCHAR, TYSIGNEDLONGINT);
+          b_push_const_int(-1);
+          b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
+          b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
+        }
+        else
+        {
+          b_push_const_int(-1);
+          b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
+        }
+      }
+      break;
+    case E_CHARCONST:
+      {
+        encode_expression(child_expr);
+        b_convert(TYUNSIGNEDCHAR, TYSIGNEDLONGINT);
+        b_push_const_int(-1);
+        b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
+        b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
+      }
+      break;
+    case E_INTCONST:
+      {
+        b_push_const_int(child_expr->u.integer - 1);
+      }
+      break;
+    default:
+      bug("Predecessor needs an ordinal type!");
+  }
 }
