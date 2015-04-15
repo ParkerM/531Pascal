@@ -18,5 +18,7 @@ ST_DR declare_forward_function(ST_ID id, PARAM_LIST params, TYPE returnType);
 ST_DR declare_external_function(ST_ID id, PARAM_LIST params, TYPE returnType);
 ST_DR apply_directives(typedef_item_p funcTypeDef, DIR_LIST directives);
 ST_DR install_function_decl(ST_ID id);
+DIR_LIST create_dir_list(DIRECTIVETYPE type);
+DIR_LIST append_to_dir_list(DIR_LIST list, DIRECTIVETYPE type);
 
 #endif
