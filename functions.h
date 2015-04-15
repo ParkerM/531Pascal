@@ -5,6 +5,18 @@
 #include "symtab.h"
 #include "types.h"
 
-ST_DR create_named_function(ST_ID id, PARAM_LIST params, TYPE returnType);
+typedef enum {
+  DIRECTIVE_FORWARD, DIRECTIVE_EXTERNAL
+} DIRECTIVETYPE
+
+typedef struct directive {
+  DIRECTIVETYPE directive;
+  struct directive *next;
+} DIRECTIVE, *DIR_LIST
+
+ST_DR declare_forward_function(ST_ID id, PARAM_LIST params, TYPE returnType);
+ST_DR declare_external_function(ST_ID id, PARAM_LIST params, TYPE returnType);
+ST_DR apply_directives(typedef_item_p funcTypeDef, DIR_LIST directives);
+ST_DR install_function_decl(ST_ID id);
 
 #endif
