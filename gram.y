@@ -51,6 +51,7 @@
 
 #include "tree.h"
 #include "expr.h"
+#include "functions.h"
 #include "types.h"
 
 void set_yydebug(int);
@@ -75,13 +76,14 @@ void yyerror(const char *);
     ST_ID           y_stid;
     
     typedef_item_p  y_typedef_item;
-    TYPE_LIST	    y_type_list;
+    TYPE_LIST	      y_type_list;
     TYPE            y_type;
 
-    EXPR			y_expr;
-    EXPR_LIST 		y_expr_list;
-
-    PARAM_LIST 		y_param_list;
+    EXPR		      	y_expr;
+    EXPR_LIST 	  	y_expr_list;
+    DIRECTIVETYPE   y_dir;
+    DIR_LIST        y_dir_list;
+    PARAM_LIST 	  	y_param_list;
     
     num_const_p     y_num_const;
 }
@@ -168,6 +170,8 @@ void yyerror(const char *);
 %type <y_expr> term signed_primary primary signed_factor factor variable_or_function_access
 %type <y_expr> variable_or_function_access_no_standard_function variable_or_function_access_no_id
 %type <y_expr> standard_functions optional_par_actual_parameter
+%type <y_dir_list> directive_list
+%type <y_dir> directive
 
 %type <y_expr_list> index_expression_list actual_parameter_list optional_par_actual_parameter_list
 
@@ -564,23 +568,32 @@ variable_declaration:
   ;
 
 function_declaration:
-    function_heading semi directive_list semi
-  | function_heading semi any_declaration_part statement_part semi
+    function_heading semi directive_list semi {
+      ST_DR rec = apply_directives($1, $3);
+      st_install($1->new_def, rec);
+    }
+  | function_heading semi { 
+      //install_function_decl($1);
+  } any_declaration_part statement_part semi
   ;
 
 function_heading:
-    LEX_PROCEDURE new_identifier optional_par_formal_parameter_list
-  | LEX_FUNCTION new_identifier optional_par_formal_parameter_list functiontype
+    LEX_PROCEDURE new_identifier optional_par_formal_parameter_list {
+      $$ = make_typedef_node($2, ty_build_func(ty_build_basic(TYVOID), $3, TRUE));
+    }
+  | LEX_FUNCTION new_identifier optional_par_formal_parameter_list functiontype {
+      $$ = make_typedef_node($2, ty_build_func($4, $3, TRUE));
+    }
   ;
 
 directive_list:
-    directive
-  | directive_list semi directive
+    directive { $$ = create_dir_list($1); }
+  | directive_list semi directive { $$ = append_to_dir_list($1, $3); }
   ;
 
 directive:
-    LEX_FORWARD
-  | LEX_EXTERNAL
+    LEX_FORWARD { $$ = DIRECTIVE_FORWARD; }
+  | LEX_EXTERNAL { $$ = DIRECTIVE_EXTERNAL; }
   ;
 
 functiontype:
