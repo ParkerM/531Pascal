@@ -163,11 +163,13 @@ void yyerror(const char *);
 %type <y_param_list> optional_procedural_type_formal_parameter_list optional_par_formal_parameter_list
 
 %type <y_expr> actual_parameter assignment_or_call_statement variable_or_function_access_maybe_assignment
-%type <y_expr> rest_of_statement standard_procedure_statement index_expression_item
+%type <y_expr> rest_of_statement /*standard_procedure_statement*/ index_expression_item
 %type <y_expr> static_expression boolean_expression expression simple_expression
 %type <y_expr> term signed_primary primary signed_factor factor variable_or_function_access
 %type <y_expr> variable_or_function_access_no_standard_function variable_or_function_access_no_id
 %type <y_expr> standard_functions optional_par_actual_parameter
+
+%type <y_cint> rts_fun_onepar rts_fun_parlist
 
 %type <y_expr_list> index_expression_list actual_parameter_list optional_par_actual_parameter_list
 
@@ -707,10 +709,10 @@ for_direction:
   ;
 
 simple_statement:
-    empty_statement
+    empty_statement { /* do nothing */ }
   | assignment_or_call_statement
-  | standard_procedure_statement
-  | statement_extensions
+  | standard_procedure_statement { printf("Standard Procedure"); }
+  | statement_extensions { /* ignore */ }
   ;
 
 empty_statement:
@@ -720,7 +722,7 @@ empty_statement:
 /* function calls */
 
 optional_par_actual_parameter_list:
-    /* empty */
+    /* empty */ { }
   | '(' actual_parameter_list ')'	{ $$ = $2; }
   ;
 
@@ -736,13 +738,13 @@ actual_parameter:
 /* ASSIGNMENT and procedure calls */
 
 assignment_or_call_statement:
-    variable_or_function_access_maybe_assignment rest_of_statement { if ($2 != NULL) $$ = new_expr_assign($1, $2); 
-    																  else; /* call statement*/ }
+    variable_or_function_access_maybe_assignment rest_of_statement { if ($2 != NULL){ $$ = new_expr_assign($1, $2); } 
+    																                                           else {/* call statement*/;} }
   ;
 
 variable_or_function_access_maybe_assignment:
-    identifier 
-  | address_operator variable_or_function_access
+    identifier { /* TODO make variable node */ }
+  | address_operator variable_or_function_access { /* ignore */ }
   | variable_or_function_access_no_id
   ;
 
@@ -838,8 +840,8 @@ variable_access_or_typename:
   ;
 
 index_expression_list:
-      index_expression_item
-    | index_expression_list ',' index_expression_item
+      index_expression_item { /* TODO Start and expression list */ }
+    | index_expression_list ',' index_expression_item { /* TODO Append to expression list */ }
     ;
 
 index_expression_item:
@@ -878,7 +880,7 @@ term:
   ;
 
 signed_primary:
-    primary
+    primary 
   | sign signed_primary
   ;
 
@@ -918,14 +920,14 @@ variable_or_function_access_no_standard_function:
   ;
 
 variable_or_function_access_no_id:
-    p_OUTPUT
-  | p_INPUT
-  | variable_or_function_access '.' new_identifier
-  | '(' expression ')'
+    p_OUTPUT  { /* ignore */ }
+  | p_INPUT   { /* ignore */ }
+  | variable_or_function_access '.' new_identifier { /* ignore */ }
+  | '(' expression ')' { $$ = $2; }
   | variable_or_function_access pointer_char
-  | variable_or_function_access '[' index_expression_list ']'
-  | variable_or_function_access_no_standard_function '(' actual_parameter_list ')'
-  | p_NEW '(' variable_access_or_typename ')'
+  | variable_or_function_access '[' index_expression_list ']' { /* PROJECT III */ }
+  | variable_or_function_access_no_standard_function '(' actual_parameter_list ')' { /* TODO Function call */ }
+  | p_NEW '(' variable_access_or_typename ')' { /* TODO Pointer Variable */ }
   ;
 
 set_constructor:
@@ -944,50 +946,50 @@ member_designator:
   ;
 
 standard_functions:
-    rts_fun_onepar '(' actual_parameter ')'
-  | rts_fun_optpar optional_par_actual_parameter
-  | rts_fun_parlist '(' actual_parameter_list ')'
+    rts_fun_onepar '(' actual_parameter ')' { /* TODO Make Chr/Ord node, depending on $1. */ }
+  | rts_fun_optpar optional_par_actual_parameter { /* ignore EOF */ }
+  | rts_fun_parlist '(' actual_parameter_list ')' { /* TODO Made Succ/Pred node, depending on $2. */ }
   ;
 
 optional_par_actual_parameter:
-    /* empty */
-  | '(' actual_parameter ')'
+    /* empty */ { }
+  | '(' actual_parameter ')' { $$ = $2; }
   ;
 
 rts_fun_optpar:
-    p_EOF
-  | p_EOLN
+    p_EOF   { /* ignore */ }
+  | p_EOLN  { /* ignore */ }
   ;
 
 rts_fun_onepar:
-    p_ABS
-  | p_SQR
-  | p_SIN
-  | p_COS
-  | p_EXP
-  | p_LN
-  | p_SQRT
-  | p_ARCTAN
-  | p_ARG
-  | p_TRUNC
-  | p_ROUND
-  | p_CARD
-  | p_ORD
-  | p_CHR
-  | p_ODD
-  | p_EMPTY
-  | p_POSITION
-  | p_LASTPOSITION
-  | p_LENGTH
-  | p_TRIM
-  | p_BINDING
-  | p_DATE
-  | p_TIME
+    p_ABS          { /* ignore */ }
+  | p_SQR          { /* ignore */ }
+  | p_SIN          { /* ignore */ }
+  | p_COS          { /* ignore */ }
+  | p_EXP          { /* ignore */ }
+  | p_LN           { /* ignore */ }
+  | p_SQRT         { /* ignore */ }
+  | p_ARCTAN       { /* ignore */ }
+  | p_ARG          { /* ignore */ }
+  | p_TRUNC        { /* ignore */ }
+  | p_ROUND        { /* ignore */ }
+  | p_CARD         { /* ignore */ }
+  | p_ORD          { $$ = UF_ORD; }
+  | p_CHR          { $$ = UF_CHR; }
+  | p_ODD          { /* ignore */ }
+  | p_EMPTY        { /* ignore */ }
+  | p_POSITION     { /* ignore */ }
+  | p_LASTPOSITION { /* ignore */ }
+  | p_LENGTH       { /* ignore */ }
+  | p_TRIM         { /* ignore */ }
+  | p_BINDING      { /* ignore */ }
+  | p_DATE         { /* ignore */ }
+  | p_TIME         { /* ignore */ }
   ;
 
 rts_fun_parlist:
-    p_SUCC    /* One or two args */
-  | p_PRED    /* One or two args */
+    p_SUCC    { $$ = UF_SUCC; }
+  | p_PRED    { $$ = UF_PRED; }
   ;
 
 relational_operator:
