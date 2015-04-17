@@ -332,8 +332,8 @@ number:
   ;
 
 unsigned_number:
-    LEX_INTCONST  { $$ = allocate_number_const_int($1); }
-  | LEX_REALCONST { $$ = allocate_number_const_real($1); }
+    LEX_INTCONST  { $$ = new_expr_intconst($1); }
+  | LEX_REALCONST { $$ = new_expr_realconst($1); }
   ;
 
 sign:

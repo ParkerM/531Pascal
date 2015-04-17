@@ -90,7 +90,7 @@ EXPR new_expr_realconst(double d)
 
 	newExpr->expr_tag = E_REALCONST;
 	newExpr->u.real = d;
-	if (debug == 1) msg("new_expr_realconst %d", newExpr->u.real);
+	if (debug == 1) msg("new_expr_realconst %f", newExpr->u.real);
 
 	return newExpr;
 }
