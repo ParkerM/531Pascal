@@ -128,6 +128,27 @@ typedef struct expr_list
 /* New assignment expression */
 EXPR new_expr_assign(EXPR left, EXPR right);
 
+/* New arithmetic expression */
+EXPR new_expr_arith(EXPR left, ARITHTAG t, EXPR right);
+
+/* New signed expression */
+EXPR new_expr_sign(int sign, EXPR right);
+
+/* New int const expression */
+EXPR new_expr_intconst(long i);
+
+/* New real const expression */
+EXPR new_expr_realconst(double d);
+
+/* New boolean expression */
+EXPR new_expr_compr(EXPR left, COMPRTAG t, EXPR right);
+
+/* New unary function expression */
+EXPR new_expr_unfunc(UNFUNCTAG t, EXPR right);
+
+/* New global variable expression */
+EXPR new_expr_var(ST_ID id, EXPR right);
+
 /* Create a new list of expression nodes */
 EXPR_LIST new_expr_list(EXPR item);
 

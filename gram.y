@@ -168,13 +168,11 @@ void yyerror(const char *);
 %type <y_expr> term signed_primary primary signed_factor factor variable_or_function_access
 %type <y_expr> variable_or_function_access_no_standard_function variable_or_function_access_no_id
 %type <y_expr> standard_functions optional_par_actual_parameter
-
-%type <y_cint> rts_fun_onepar rts_fun_parlist
+%type <y_expr> constant number unsigned_number
 
 %type <y_expr_list> index_expression_list actual_parameter_list optional_par_actual_parameter_list
 
-%type <y_num_const> constant number unsigned_number
-%type <y_cint> sign
+%type <y_cint> sign rts_fun_onepar rts_fun_parlist multiplying_operator adding_operator relational_operator
 
 /* Precedence rules */
 
@@ -840,8 +838,8 @@ variable_access_or_typename:
   ;
 
 index_expression_list:
-      index_expression_item { /* TODO Start and expression list */ }
-    | index_expression_list ',' index_expression_item { /* TODO Append to expression list */ }
+      index_expression_item { $$ = new_expr_list($1); }
+    | index_expression_list ',' index_expression_item { $$ = append_to_expr_list($1, $3); }
     ;
 
 index_expression_item:
@@ -860,14 +858,14 @@ boolean_expression:
   ;
 
 expression:
-    expression relational_operator simple_expression
+    expression relational_operator simple_expression { $$ = new_expr_compr($1, $2, $3); }
   | expression LEX_IN simple_expression
   | simple_expression
   ;
 
 simple_expression:
     term
-  | simple_expression adding_operator term
+  | simple_expression adding_operator term 	{ $$ = new_expr_arith($1, $2, $3); }
   | simple_expression LEX_SYMDIFF term
   | simple_expression LEX_OR term
   | simple_expression LEX_XOR term
@@ -875,13 +873,13 @@ simple_expression:
 
 term:
     signed_primary
-  | term multiplying_operator signed_primary
+  | term multiplying_operator signed_primary { $$ = new_expr_arith($1, $2, $3); }
   | term LEX_AND signed_primary
   ;
 
 signed_primary:
     primary 
-  | sign signed_primary
+  | sign signed_primary { $$ = new_expr_sign($1, $2); }
   ;
 
 primary:
@@ -893,7 +891,7 @@ primary:
 
 signed_factor:
     factor
-  | sign signed_factor
+  | sign signed_factor 	{ $$ = new_expr_sign($1, $2); }
   ;
 
 factor:
@@ -946,9 +944,9 @@ member_designator:
   ;
 
 standard_functions:
-    rts_fun_onepar '(' actual_parameter ')' { /* TODO Make Chr/Ord node, depending on $1. */ }
+    rts_fun_onepar '(' actual_parameter ')' { $$ = new_expr_unfunc($1, $3); }
   | rts_fun_optpar optional_par_actual_parameter { /* ignore EOF */ }
-  | rts_fun_parlist '(' actual_parameter_list ')' { /* TODO Made Succ/Pred node, depending on $2. */ }
+  | rts_fun_parlist '(' actual_parameter_list ')' { $$ = new_expr_unfunc($1, $3); }
   ;
 
 optional_par_actual_parameter:
@@ -993,24 +991,24 @@ rts_fun_parlist:
   ;
 
 relational_operator:
-    LEX_NE
-  | LEX_LE
-  | LEX_GE
-  | '='
-  | '<'
-  | '>'
+    LEX_NE 	{ $$ = CM_NEQUAL; }
+  | LEX_LE  { $$ = CM_LSEQL; }
+  | LEX_GE 	{ $$ = CM_GTEQL; }
+  | '='		{ $$ = CM_EQUAL; }
+  | '<'		{ $$ = CM_LESS; }
+  | '>'		{ $$ = CM_GREAT; }
   ;
 
 multiplying_operator:
-    LEX_DIV
-  | LEX_MOD
-  | '/'
-  | '*'
+    LEX_DIV { $$ = AR_IDIV; }
+  | LEX_MOD	{ $$ = AR_MOD; }
+  | '/'		{ $$ = AR_RDIV; }
+  | '*'		{ $$ = AR_MULT; }
   ;
 
 adding_operator:
-    '-'
-  | '+'
+    '-'	{ $$ = AR_SUB; }
+  | '+'	{ $$ = AR_ADD; }
   ;
 
 semi:
