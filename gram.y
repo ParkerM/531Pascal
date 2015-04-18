@@ -54,7 +54,7 @@
 #include "types.h"
 
 void set_yydebug(int);
-void yyerror(const char *);
+void yyerror(char *);
 
 /* Like YYERROR but do call yyerror */
 #define YYERROR1 { yyerror ("syntax error"); YYERROR; }
@@ -168,7 +168,7 @@ void yyerror(const char *);
 %type <y_expr> term signed_primary primary signed_factor factor variable_or_function_access
 %type <y_expr> variable_or_function_access_no_standard_function variable_or_function_access_no_id
 %type <y_expr> standard_functions optional_par_actual_parameter
-%type <y_expr> constant number unsigned_number
+%type <y_expr> constant number unsigned_number constant_literal string predefined_literal
 
 %type <y_expr_list> index_expression_list actual_parameter_list optional_par_actual_parameter_list
 
@@ -323,11 +323,11 @@ constant:
     identifier       {}
   | sign identifier  {}
   | number           { $$ = $1; }
-  | constant_literal {}
+  | constant_literal { $$ = $1; }
   ;
 
 number:
-    sign unsigned_number { $$ = sign_constant($1, $2); }
+    sign unsigned_number { EXPR sign = new_expr_intconst($1); $$ = new_expr_arith(sign, AR_MULT, $2); }
   | unsigned_number { $$ = $1; }
   ;
 
@@ -347,14 +347,14 @@ constant_literal:
   ;
 
 predefined_literal:
-    LEX_NIL
-  | p_FALSE
-  | p_TRUE
+    LEX_NIL { }
+  | p_FALSE { $$ = new_expr_boolconst(0); }
+  | p_TRUE  { $$ = new_expr_boolconst(1); }
   ;
 
 string:
-    LEX_STRCONST
-  | string LEX_STRCONST
+    LEX_STRCONST { $$ = new_expr_strconst($1); }
+  | string LEX_STRCONST { $$ = new_expr_strconst($2); }
   ;
 
 /* $$ type should be NONE */
@@ -898,9 +898,9 @@ factor:
     variable_or_function_access
   | constant_literal
   | unsigned_number
-  | set_constructor
-  | LEX_NOT signed_factor
-  | address_operator factor
+  | set_constructor         { /* ignore */ }
+  | LEX_NOT signed_factor   { /* ignore? */ }
+  | address_operator factor { /* ignore */ }
   ;
 
 address_operator:
@@ -913,7 +913,7 @@ variable_or_function_access:
   ;
 
 variable_or_function_access_no_standard_function:
-    identifier
+    identifier { /* TODO Make variable node */ }
   | variable_or_function_access_no_id
   ;
 
@@ -944,7 +944,7 @@ member_designator:
   ;
 
 standard_functions:
-    rts_fun_onepar '(' actual_parameter ')' { $$ = new_expr_unfunc($1, $3); }
+    rts_fun_onepar '(' actual_parameter ')' { EXPR_LIST tempList = new_expr_list($3); $$ = new_expr_unfunc($1, tempList); }
   | rts_fun_optpar optional_par_actual_parameter { /* ignore EOF */ }
   | rts_fun_parlist '(' actual_parameter_list ')' { $$ = new_expr_unfunc($1, $3); }
   ;
@@ -1022,7 +1022,7 @@ optional_semicolon:
 
 %%
 
-void yyerror(const char *msg)
+void yyerror(char *msg)
 {
     error(msg);
 }

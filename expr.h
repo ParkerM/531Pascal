@@ -37,7 +37,7 @@
  *     E_VAR        - A [global] variable. TODO: update for 100% level.
  *     E_CAST       - Inserted to cast types prior to operation.
  */
-typedef enum {E_ASSIGN, E_ARITH, E_SIGN, E_INTCONST, E_REALCONST, E_CHARCONST, E_COMPR, E_UNFUNC, E_VAR, E_CAST} EXPRTAG; 
+typedef enum {E_ASSIGN, E_ARITH, E_SIGN, E_INTCONST, E_REALCONST, E_CHARCONST, E_BOOLCONST, E_COMPR, E_UNFUNC, E_VAR, E_CAST} EXPRTAG; 
 
 /* typedef enum ARITHTAG
  *
@@ -108,6 +108,7 @@ typedef struct expression
   	long integer;
   	double real;
   	char character;
+    int bool;  // 0 = false, 1 = true;
   	
   	ARITHTAG arith_tag;
   	SIGNTAG sign_tag;
@@ -131,6 +132,9 @@ EXPR new_expr_assign(EXPR left, EXPR right);
 /* New arithmetic expression */
 EXPR new_expr_arith(EXPR left, ARITHTAG t, EXPR right);
 
+/* New casting expression */
+EXPR new_expr_cast(CASTTAG t, EXPR right);
+
 /* New signed expression */
 EXPR new_expr_sign(int sign, EXPR right);
 
@@ -140,14 +144,18 @@ EXPR new_expr_intconst(long i);
 /* New real const expression */
 EXPR new_expr_realconst(double d);
 
+EXPR new_expr_strconst(char *str);
+
+EXPR new_expr_boolconst(int bool);
+
 /* New boolean expression */
 EXPR new_expr_compr(EXPR left, COMPRTAG t, EXPR right);
 
 /* New unary function expression */
-EXPR new_expr_unfunc(UNFUNCTAG t, EXPR right);
+EXPR new_expr_unfunc(UNFUNCTAG t, EXPR_LIST right);
 
 /* New global variable expression */
-EXPR new_expr_var(ST_ID id, EXPR right);
+EXPR new_expr_var(ST_ID id);
 
 /* Create a new list of expression nodes */
 EXPR_LIST new_expr_list(EXPR item);

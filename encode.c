@@ -203,6 +203,10 @@ void encode_expression(EXPR expr)
       b_push_const_int(expr->u.character);
       b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
       break;
+    case E_BOOLCONST:
+      b_push_const_int(expr->u.bool);
+      b_convert(TYSIGNEDLONGINT, TYSIGNEDCHAR);
+      break;
     case E_COMPR:
       encode_compare_expr(expr);
       break;
@@ -216,7 +220,7 @@ void encode_expression(EXPR expr)
       encode_cast_expr(expr);
       break;
     default:
-      bug("Encountered unknown expression type.");
+      bug("Encountered unknown expression type %d", expr->expr_tag);
       break;
   }
 }
