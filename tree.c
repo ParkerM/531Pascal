@@ -91,6 +91,19 @@ stid_list append_stid_to_list(stid_list base, ST_ID new_id)
   return newItem;
 }
 
+stid_list merge_stid_list(stid_list list1, stid_list list2)
+{
+   //go to end of list
+    while(list1->next)
+    {
+        list1 = list1->next;
+    }
+    
+    //append list2 onto list1
+    list1->next = list2;
+    return list1;
+}
+
 typedef_item_p make_typedef_node(ST_ID id, TYPE t)
 {
   //message("make typedef node");
@@ -441,33 +454,48 @@ TYPE_LIST append_to_type_list(TYPE_LIST list, TYPE t)
 void vardec(stid_list list, TYPE t)
 {
     //message("vardec");
+    
+       //create ST data record
+       ST_DR dr;
 
-    //create ST data record
-    ST_DR dr;
-
-    //while list is not null
-    while (list)
-    {
-        dr = stdr_alloc();
-        dr->tag = GDECL;
-        dr->u.decl.type = t;
-        
-        BOOLEAN newRec = st_install(list->enrollment_papers, dr);
-        
-        if (newRec)
-        {
-          encode(list->enrollment_papers);
-        }
-        else
-        {
-          error("Duplicate definition at \"%s\"", st_get_id_str(list->enrollment_papers));
-        }
-        //message("added type: ");
-        //ty_print_type(t); //currently gives "illegal typetag"
-        
-        
-        
-        list = list->next;
+       //while list is not null
+       while (list)
+       {
+           dr = stdr_alloc();           
+           dr->u.decl.type = t;
+           
+           // Block 0 (install block) and 1 (global block) are reserved.
+           // Any other blocks are local blocks, so variables must be installed
+           // as LDECLs
+           if(st_get_cur_block() <= 1)
+           {
+               //This is a global variable
+               dr->tag = GDECL;
+           }
+           else
+           {
+               //This is a local variable
+               dr->tag = LDECL;
+           }
+           
+           BOOLEAN newRec = st_install(list->enrollment_papers, dr);
+           
+           if (newRec)
+           {
+             encode(list->enrollment_papers);
+           }
+           else
+           {
+             error("Duplicate definition at \"%s\"", st_get_id_str(list->enrollment_papers));
+           }
+           //message("added type: ");
+           //ty_print_type(t); //currently gives "illegal typetag"
+           list = list->next;
+       }
+    }
+    else{
+      //This is a scoped, local variable
+      
     }
 }
 
