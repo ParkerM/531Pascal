@@ -348,8 +348,8 @@ constant_literal:
 
 predefined_literal:
     LEX_NIL { }
-  | p_FALSE { $$ = new_expr_boolconst(0); }
-  | p_TRUE  { $$ = new_expr_boolconst(1); }
+  | p_FALSE { $$ = new_expr_boolconst(FALSE); }
+  | p_TRUE  { $$ = new_expr_boolconst(TRUE); }
   ;
 
 string:

@@ -108,7 +108,7 @@ typedef struct expression
   	long integer;
   	double real;
   	char character;
-    int bool;  // 0 = false, 1 = true;
+    BOOLEAN bool;  // 0 = false, 1 = true;
   	
   	ARITHTAG arith_tag;
   	SIGNTAG sign_tag;
