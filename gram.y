@@ -51,6 +51,7 @@
 
 #include "tree.h"
 #include "expr.h"
+#include "functions.h"
 #include "types.h"
 
 void set_yydebug(int);
@@ -75,13 +76,14 @@ void yyerror(char *);
     ST_ID           y_stid;
     
     typedef_item_p  y_typedef_item;
-    TYPE_LIST	    y_type_list;
+    TYPE_LIST	      y_type_list;
     TYPE            y_type;
 
-    EXPR			y_expr;
-    EXPR_LIST 		y_expr_list;
-
-    PARAM_LIST 		y_param_list;
+    EXPR		      	y_expr;
+    EXPR_LIST 	  	y_expr_list;
+    DIRECTIVETYPE   y_dir;
+    DIR_LIST        y_dir_list;
+    PARAM_LIST 	  	y_param_list;
     
     num_const_p     y_num_const;
 }
@@ -151,12 +153,12 @@ void yyerror(char *);
 
 %type <y_stid>      identifier new_identifier
 %type <y_string>    new_identifier_1
-%type <y_stid_item> id_list
+%type <y_stid_item> id_list variable_declaration_list variable_declaration
 
 %type <y_type> typename type_denoter new_ordinal_type subrange_type new_pointer_type pointer_domain_type
 %type <y_type> new_structured_type array_type ordinal_index_type new_procedural_type functiontype
 
-%type <y_typedef_item> type_definition
+%type <y_typedef_item> type_definition function_heading
 %type <y_type_list>    array_index_list
 
 %type <y_param_list> procedural_type_formal_parameter_list formal_parameter_list procedural_type_formal_parameter formal_parameter 
@@ -168,11 +170,14 @@ void yyerror(char *);
 %type <y_expr> term signed_primary primary signed_factor factor variable_or_function_access
 %type <y_expr> variable_or_function_access_no_standard_function variable_or_function_access_no_id
 %type <y_expr> standard_functions optional_par_actual_parameter
+%type <y_dir_list> directive_list
+%type <y_dir> directive
+
 %type <y_expr> constant number unsigned_number constant_literal string predefined_literal
 
 %type <y_expr_list> index_expression_list actual_parameter_list optional_par_actual_parameter_list
 
-%type <y_cint> sign rts_fun_onepar rts_fun_parlist multiplying_operator adding_operator relational_operator
+%type <y_cint> sign rts_fun_onepar rts_fun_parlist multiplying_operator adding_operator relational_operator any_declaration_part variable_declaration_part any_decl simple_decl function_declaration
 
 /* Precedence rules */
 
@@ -289,8 +294,8 @@ any_global_declaration_part:
   ;
 
 any_declaration_part:
-    /* empty */
-  | any_declaration_part any_decl
+    /* empty */ { $$ = 0;}
+  | any_declaration_part any_decl { $$ = $1+$2; }
   ;
 
 any_decl:
@@ -551,36 +556,56 @@ one_case_constant:
    using a simple inherited attribute of type int */
 
 variable_declaration_part:
-    LEX_VAR variable_declaration_list
+    LEX_VAR variable_declaration_list { $$ = size_of_vars($2); }
   ;
 
 variable_declaration_list:
     variable_declaration
-  | variable_declaration_list variable_declaration
+  | variable_declaration_list variable_declaration { $$ = merge_stid_list($1, $2); }
   ;
 
 variable_declaration:
-    id_list ':' type_denoter semi 	{vardec($1, $3);}
+    id_list ':' type_denoter semi 	{ vardec($1, $3); $$ = $1; }
   ;
 
 function_declaration:
-    function_heading semi directive_list semi
-  | function_heading semi any_declaration_part statement_part semi
+    function_heading semi directive_list semi {
+      //Generate function declaration with directives
+      ST_DR rec = apply_directives($1, $3);
+      st_install($1->new_def, rec);
+    }
+  | function_heading semi { 
+      //Generate function declaration with local definition
+      install_function_decl($1);
+      enter_function_block($1);
+  } any_declaration_part {
+	   int block;
+      b_func_prologue(st_lookup($1->new_def, &block)->u.decl.v.global_func_name);
+      encode_function_def($1);
+      b_alloc_local_vars($4);
+  } statement_part semi {
+      exit_function_block($1);
+  }
   ;
 
 function_heading:
-    LEX_PROCEDURE new_identifier optional_par_formal_parameter_list
-  | LEX_FUNCTION new_identifier optional_par_formal_parameter_list functiontype
+    LEX_PROCEDURE new_identifier optional_par_formal_parameter_list {
+      $$ = make_typedef_node($2, ty_build_func(ty_build_basic(TYVOID), $3, TRUE));
+    }
+  | LEX_FUNCTION new_identifier optional_par_formal_parameter_list functiontype {
+      b_alloc_return_value();
+      $$ = make_typedef_node($2, ty_build_func($4, $3, TRUE));
+    }
   ;
 
 directive_list:
-    directive
-  | directive_list semi directive
+    directive { $$ = create_dir_list($1); }
+  | directive_list semi directive { $$ = append_to_dir_list($1, $3); }
   ;
 
 directive:
-    LEX_FORWARD
-  | LEX_EXTERNAL
+    LEX_FORWARD { $$ = DIRECTIVE_FORWARD; }
+  | LEX_EXTERNAL { $$ = DIRECTIVE_EXTERNAL; }
   ;
 
 functiontype:
@@ -725,8 +750,8 @@ optional_par_actual_parameter_list:
   ;
 
 actual_parameter_list:
-    actual_parameter 							{ $$ = new_expr_list($1); }
-  | actual_parameter_list ',' actual_parameter 	{ $$ = append_to_expr_list($1, $3); }
+    actual_parameter 							
+  | actual_parameter_list ',' actual_parameter 
   ;
 
 actual_parameter:
@@ -736,6 +761,7 @@ actual_parameter:
 /* ASSIGNMENT and procedure calls */
 
 assignment_or_call_statement:
+
     variable_or_function_access_maybe_assignment rest_of_statement { if ($2 != NULL){ $$ = new_expr_assign($1, $2); } 
     																                                           else {/* call statement*/;} }
   ;
@@ -950,6 +976,7 @@ standard_functions:
   ;
 
 optional_par_actual_parameter:
+
     /* empty */ { }
   | '(' actual_parameter ')' { $$ = $2; }
   ;
