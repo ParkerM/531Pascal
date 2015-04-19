@@ -230,17 +230,17 @@ TYPE get_basic_type(char* typename)
   }
 }
 
-TYPE create_subrange(num_const_p low, num_const_p high)
+TYPE create_subrange(EXPR low, EXPR high)
 {
-  if (low->type != TYSIGNEDLONGINT && high->type != TYSIGNEDLONGINT)
+  if (low->expr_type != TYSIGNEDLONGINT && high->expr_type != TYSIGNEDLONGINT)
   {
     // not good!
     return NULL;
   }
   else
   {
-    long low_val = low->v.integer;
-    long high_val = high->v.integer;
+    long low_val = low->u.integer;
+    long high_val = high->u.integer;
     
     TYPE intType = ty_build_basic(TYSIGNEDLONGINT);
     
@@ -351,6 +351,23 @@ BOOLEAN isDataType(TYPE t)
       return TRUE;
     break;
   }
+}
+
+BOOLEAN isOrdinalType(TYPETAG t)
+{
+    switch(t)
+    {
+        case TYUNSIGNEDCHAR:
+        case TYSIGNEDCHAR:
+        case TYSUBRANGE:
+        case TYSIGNEDLONGINT:
+            return TRUE;
+        break;
+        
+        default:
+            return FALSE;
+        break;
+    }
 }
 
 void paramdec(stid_list list, TYPE t)

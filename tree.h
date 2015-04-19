@@ -89,10 +89,11 @@ TYPE get_basic_type(char*);
 
 /* Creates a subrange type from the given constants. As of PROJECT 1, the only num_consts
    accepted are integer constants. */
-TYPE create_subrange(num_const_p low, num_const_p high);
+TYPE create_subrange(EXPR low, EXPR high);
 
 BOOLEAN isSimpleType(TYPE t);
 BOOLEAN isDataType(TYPE t);
+BOOLEAN isOrdinalType(TYPETAG t);
 
 /* Function to create a new param list when a formal parameter is encountered */
 PARAM_LIST make_new_param_list(TYPE t);
