@@ -153,12 +153,12 @@ void yyerror(const char *);
 
 %type <y_stid>      identifier new_identifier
 %type <y_string>    new_identifier_1
-%type <y_stid_item> id_list
+%type <y_stid_item> id_list variable_declaration_list variable_declaration
 
 %type <y_type> typename type_denoter new_ordinal_type subrange_type new_pointer_type pointer_domain_type
 %type <y_type> new_structured_type array_type ordinal_index_type new_procedural_type functiontype
 
-%type <y_typedef_item> type_definition
+%type <y_typedef_item> type_definition function_heading
 %type <y_type_list>    array_index_list
 
 %type <y_param_list> procedural_type_formal_parameter_list formal_parameter_list procedural_type_formal_parameter formal_parameter 
@@ -176,7 +176,7 @@ void yyerror(const char *);
 %type <y_expr_list> index_expression_list actual_parameter_list optional_par_actual_parameter_list
 
 %type <y_num_const> constant number unsigned_number
-%type <y_cint> sign
+%type <y_cint> sign any_declaration_part variable_declaration_part any_decl simple_decl function_declaration
 
 /* Precedence rules */
 
@@ -293,8 +293,8 @@ any_global_declaration_part:
   ;
 
 any_declaration_part:
-    /* empty */
-  | any_declaration_part any_decl
+    /* empty */ { $$ = 0;}
+  | any_declaration_part any_decl { $$ = $1+$2; }
   ;
 
 any_decl:
@@ -578,11 +578,13 @@ function_declaration:
       install_function_decl($1);
       enter_function_block($1);
   } any_declaration_part {
-      b_func_prologue($1->old_type->u.decl.v.global_func_name);
-      encode_formal_params($1);
-  } statement_part {
-      exit_function_block();
-  } semi
+	   int block;
+      b_func_prologue(st_lookup($1->new_def, &block)->u.decl.v.global_func_name);
+      encode_function_def($1);
+      b_alloc_local_vars($4);
+  } statement_part semi {
+      exit_function_block($1);
+  }
   ;
 
 function_heading:
@@ -747,8 +749,8 @@ optional_par_actual_parameter_list:
   ;
 
 actual_parameter_list:
-    actual_parameter 							{ $$ = new_expr_list($1); }
-  | actual_parameter_list ',' actual_parameter 	{ $$ = append_to_expr_list($1, $3); }
+    actual_parameter 							
+  | actual_parameter_list ',' actual_parameter 
   ;
 
 actual_parameter:
@@ -758,8 +760,7 @@ actual_parameter:
 /* ASSIGNMENT and procedure calls */
 
 assignment_or_call_statement:
-    variable_or_function_access_maybe_assignment rest_of_statement { if ($2 != NULL) $$ = new_expr_assign($1, $2); 
-    																  else; //call statement}
+    variable_or_function_access_maybe_assignment rest_of_statement 
   ;
 
 variable_or_function_access_maybe_assignment:
@@ -973,7 +974,7 @@ standard_functions:
 
 optional_par_actual_parameter:
     /* empty */
-  | '(' actual_parameter ')'
+  | '(' actual_parameter ')' { $$ = $2; }
   ;
 
 rts_fun_optpar:

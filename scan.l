@@ -14,6 +14,7 @@
 #include "message.h"
 #include "tree.h"
 #include "expr.h"
+#include "functions.h"
 /* defined in defs.h */
 #include BACKEND_HEADER_FILE
 #include "y.tab.h"

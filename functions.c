@@ -40,7 +40,7 @@ ST_DR declare_external_function(ST_ID id, PARAM_LIST params, TYPE returnType)
    return rec;
 }
 
-void apply_directives(typedef_item_p funcTypeDef, DIR_LIST dirList)
+ST_DR apply_directives(typedef_item_p funcTypeDef, DIR_LIST dirList)
 {
    PARAM_LIST params = NULL;
    BOOLEAN checkArgs = FALSE;
@@ -49,7 +49,7 @@ void apply_directives(typedef_item_p funcTypeDef, DIR_LIST dirList)
    DIR_LIST dir = dirList;
    ST_DR rec = NULL;
    
-   while(dir && rec == NULL)
+   while(dir != NULL && rec == NULL)
    {
       if(dir->directive == DIRECTIVE_FORWARD)
       {
@@ -63,6 +63,7 @@ void apply_directives(typedef_item_p funcTypeDef, DIR_LIST dirList)
       }
       dir = dir->next;
    }
+   return rec;
 }
 
 ST_DR install_function_decl(typedef_item_p funcDef)
@@ -75,12 +76,12 @@ ST_DR install_function_decl(typedef_item_p funcDef)
    {
       ST_DR rec = stdr_alloc();
       rec->tag = FDECL;
-      rec->u.decl.type = funcType
+      rec->u.decl.type = funcType;
       rec->u.decl.sc = NO_SC;
       rec->u.decl.is_ref = FALSE;
       rec->u.decl.v.global_func_name = st_get_id_str(id);
       rec->u.decl.err = FALSE;
-      st_install(id, fDecl);
+      st_install(id, rec);
       return rec;
    }
    else
@@ -164,21 +165,46 @@ void enter_function_block(typedef_item_p funcDef)
       rec->u.decl.sc = param->sc;
       rec->u.decl.is_ref = param->is_ref;
       rec->u.decl.v.offset = b_get_formal_param_offset(ty_query(param->type));      
-      rec->u.decl.err = param->error;      
+      rec->u.decl.err = param->err;      
       st_install(param->id, rec);
       param = params->next;
    } 
 }
 
-void exit_function_block()
-{   
+void exit_function_block(typedef_item_p funcDef)
+{
+	int check_args;
+   PARAM_LIST params;
+   TYPE funcType = funcDef->old_type;
+   TYPE returnType = ty_query_func(funcType, &params, &check_args);
+   
+	b_prepare_return(ty_query(returnType));
+	b_func_epilogue(st_get_id_str(funcDef->new_def));   
    st_exit_block();
 }
 
-void encode_formal_params(typedef_item_p funcDef)
+void encode_function_def(typedef_item_p funcDef)
 {
    int check_args;
    PARAM_LIST params;
    TYPE funcType = funcDef->old_type;
    TYPE returnType = ty_query_func(funcType, &params, &check_args);
+   
+   while(params != NULL)
+   {
+   	int offset = b_store_formal_param(ty_query(params->type));
+   	int block;
+   	if(offset != st_lookup(params->id, &block)->u.decl.v.offset)
+   	params = params->next;  
+   }
+   
+   if(ty_query(returnType) != TYVOID)
+   {
+   	b_alloc_return_value();
+   }
+}
+
+int size_of_vars(stid_list list)
+{
+	return 0;
 }

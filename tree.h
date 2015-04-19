@@ -120,4 +120,6 @@ void vardec(stid_list list, TYPE t);
 
 /* Associate id_list with type as a set of parameters*/
 void paramdec(stid_list list, TYPE t);
+
+stid_list merge_stid_list(stid_list list1, stid_list list2);
 #endif
