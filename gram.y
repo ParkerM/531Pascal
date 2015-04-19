@@ -304,8 +304,8 @@ any_decl:
   ;
 
 simple_decl:
-    constant_definition_part
-  | type_definition_part
+    constant_definition_part { $$ = 0; }
+  | type_definition_part { $$ = 0; }
   | variable_declaration_part
   ;
 
@@ -750,12 +750,12 @@ optional_par_actual_parameter_list:
   ;
 
 actual_parameter_list:
-    actual_parameter 							
+    actual_parameter { }						
   | actual_parameter_list ',' actual_parameter 
   ;
 
 actual_parameter:
-    expression
+    expression {  }
   ;
 
 /* ASSIGNMENT and procedure calls */
