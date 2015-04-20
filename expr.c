@@ -52,8 +52,8 @@ EXPR new_expr_assign(EXPR left, EXPR right)
     if (compatible == COMPLETELY_INCOMPATIBLE)
     {
         error("Illegal conversion between types.");
-        ty_print_typetag(left->expr_type);
-        ty_print_typetag(modifiedRight->expr_type);
+        ty_print_typetag(left->expr_type); msg("");
+        ty_print_typetag(modifiedRight->expr_type); msg("");
     }
     else if (compatible == CONVERSION_REQUIRED)
     {
@@ -104,16 +104,16 @@ EXPR new_expr_arith(EXPR left, ARITHTAG t, EXPR right)
     if (compatible == COMPLETELY_INCOMPATIBLE)
     {
         error("Illegal conversion between types.");
-        ty_print_typetag(modifiedLeft->expr_type);
-        ty_print_typetag(modifiedRight->expr_type);
+        ty_print_typetag(modifiedLeft->expr_type); msg("");
+        ty_print_typetag(modifiedRight->expr_type); msg("");
     }
     else if (compatible == CONVERSION_REQUIRED)
     {
         if (modifiedRight->expr_tag == TYFLOAT) modifiedRight = new_expr_cast(CT_SGL_REAL, modifiedRight);
         else if (modifiedRight->expr_tag == TYSIGNEDLONGINT) modifiedRight = new_expr_cast(CT_INT_REAL, modifiedRight);
         
-        if (modifiedLeft->expr_tag == TYFLOAT) modifiedRight = new_expr_cast(CT_SGL_REAL, modifiedLeft);
-        else if (modifiedLeft->expr_tag == TYSIGNEDLONGINT) modifiedRight = new_expr_cast(CT_INT_REAL, modifiedLeft);
+        if (modifiedLeft->expr_tag == TYFLOAT) modifiedLeft = new_expr_cast(CT_SGL_REAL, modifiedLeft);
+        else if (modifiedLeft->expr_tag == TYSIGNEDLONGINT) modifiedLeft = new_expr_cast(CT_INT_REAL, modifiedLeft);
     }
     
 	//allocate new EXPR
@@ -121,6 +121,7 @@ EXPR new_expr_arith(EXPR left, ARITHTAG t, EXPR right)
 
 	newExpr->u.arith_tag = t;
 	newExpr->expr_tag = E_ARITH;
+	newExpr->expr_type = modifiedLeft->expr_type;
 	newExpr->left = left;
 	newExpr->right = right;
 	if (debug == 1) msg("new_expr_arith: ARITHTAG %i", newExpr->u.arith_tag);
@@ -234,8 +235,8 @@ EXPR new_expr_compr(EXPR left, COMPRTAG t, EXPR right)
     if (compatible == COMPLETELY_INCOMPATIBLE)
     {
         error("Illegal conversion between types.");
-        ty_print_typetag(modifiedLeft->expr_type);
-        ty_print_typetag(modifiedRight->expr_type);
+        ty_print_typetag(modifiedLeft->expr_type); error("");
+        ty_print_typetag(modifiedRight->expr_type); error("");
     }
     else if (compatible == CONVERSION_REQUIRED)
     {
@@ -262,6 +263,7 @@ EXPR new_expr_compr(EXPR left, COMPRTAG t, EXPR right)
 /* New unary function expression */
 EXPR new_expr_unfunc(UNFUNCTAG t, EXPR_LIST rightList)
 {
+    
     TYPETAG rightExprType = rightList->base->expr_type;
     TYPETAG superExprType = TYVOID;
     BOOLEAN typeOK = TRUE;
@@ -298,6 +300,7 @@ EXPR new_expr_unfunc(UNFUNCTAG t, EXPR_LIST rightList)
     newExpr->expr_type = superExprType;
 	newExpr->right = rightList->base;
 	newExpr->u.unfunc_tag = t;
+	
 	if (debug == 1) msg("new_expr_unfunc: UNFUNCTAG %i", newExpr->u.unfunc_tag);
 
 	return newExpr;
@@ -343,11 +346,20 @@ EXPR new_expr_cast(CASTTAG t, EXPR right)
     EXPR newExpr = (EXPR) malloc(sizeof(expression));
     
     newExpr->expr_tag = E_CAST;
-    newExpr->expr_type = right->expr_type;
+    
+    switch (t)
+    {
+        case CT_LDEREF: newExpr->expr_type = right->expr_type; break;
+        case CT_SGL_REAL: newExpr->expr_type = TYDOUBLE; break;
+        case CT_REAL_SGL: newExpr->expr_type = TYFLOAT; break;
+        case CT_INT_REAL: newExpr->expr_type = TYDOUBLE; break;
+        default: error("Unknown cast tag encountered, %d", t); break;
+    }
+    
     newExpr->right = right;
     newExpr->u.cast_tag = t;
     
-    if (debug == 1) msg("new_expr_cast: CASTTAG %d", t);
+    if (debug == 1) { msg("new_expr_cast: CASTTAG %d", t); ty_print_typetag(right->expr_type); msg(""); }
     
     return newExpr;
 }
@@ -383,6 +395,13 @@ int require_type_conversion(EXPR left, EXPR right, int precedence, TYPETAG *requ
     TYPETAG typeLeft = left->expr_type;
     TYPETAG typeRight = right->expr_type;
     
+    if (debug)
+    {
+      msg("require_type_conversion(%d, %d, %d, *)", typeLeft, typeRight, precedence);
+      ty_print_typetag(typeLeft); msg("");
+      ty_print_typetag(typeRight); msg("");
+    }
+        
     if (typeLeft == typeRight) { return COMPLETELY_COMPATIBLE; }
     
     switch (precedence)

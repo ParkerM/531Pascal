@@ -754,12 +754,12 @@ optional_par_actual_parameter_list:
   ;
 
 actual_parameter_list:
-    actual_parameter { }						
-  | actual_parameter_list ',' actual_parameter 
+    actual_parameter { $$ = new_expr_list($1); }						
+  | actual_parameter_list ',' actual_parameter { $$ = append_to_expr_list($1, $3); }
   ;
 
 actual_parameter:
-    expression {  }
+    expression
   ;
 
 /* ASSIGNMENT and procedure calls */
@@ -767,11 +767,11 @@ actual_parameter:
 assignment_or_call_statement:
 
     variable_or_function_access_maybe_assignment rest_of_statement { if ($2 != NULL){ $$ = new_expr_assign($1, $2); } 
-    																                                           else {/* call statement*/;} }
+    																                                           else { $$ = $1; } }
   ;
 
 variable_or_function_access_maybe_assignment:
-    identifier { /* TODO make variable node */ }
+    identifier { $$ = new_expr_var($1); }
   | address_operator variable_or_function_access { /* ignore */ }
   | variable_or_function_access_no_id
   ;
@@ -943,7 +943,7 @@ variable_or_function_access:
   ;
 
 variable_or_function_access_no_standard_function:
-    identifier { /* TODO Make variable node */ }
+    identifier { $$ = new_expr_var($1); }
   | variable_or_function_access_no_id
   ;
 
