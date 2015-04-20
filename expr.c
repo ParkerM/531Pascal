@@ -34,7 +34,7 @@
  */
 int require_type_conversion(EXPR left, EXPR right, int precedence, TYPETAG *required);
 
-int debug = 1; //set to 1 for debug messages
+int debug = 0; //set to 1 for debug messages
 
 /* New assignment expression */
 EXPR new_expr_assign(EXPR left, EXPR right) 
@@ -69,12 +69,17 @@ EXPR new_expr_assign(EXPR left, EXPR right)
         {
             modifiedRight = new_expr_cast(CT_INT_REAL, modifiedRight);
         }
+        else if (modifiedRight->expr_type == TYSIGNEDLONGINT && required == TYFLOAT)
+        {
+            modifiedRight = new_expr_cast(CT_INT_SGL, modifiedRight);
+        }
     }
     
 	//allocate new EXPR
 	EXPR newExpr = (EXPR) malloc(sizeof(expression));
 
 	newExpr->expr_tag = E_ASSIGN;
+	newExpr->expr_type = left->expr_type;
 	newExpr->left = left;
 	newExpr->right = modifiedRight;
 	if (debug == 1) msg("new_expr_assign");
@@ -109,6 +114,9 @@ EXPR new_expr_arith(EXPR left, ARITHTAG t, EXPR right)
     }
     else if (compatible == CONVERSION_REQUIRED)
     {
+        if (modifiedRight->expr_tag == TYFLOAT && modifiedLeft->expr_tag == TYSIGNEDLONGINT) modifiedLeft = new_expr_cast(CT_INT_SGL, modifiedLeft);
+        else if (modifiedRight->expr_tag == TYSIGNEDLONGINT && modifiedLeft->expr_tag == TYFLOAT) modifiedRight = new_expr_cast(CT_INT_SGL, modifiedRight);
+        
         if (modifiedRight->expr_tag == TYFLOAT) modifiedRight = new_expr_cast(CT_SGL_REAL, modifiedRight);
         else if (modifiedRight->expr_tag == TYSIGNEDLONGINT) modifiedRight = new_expr_cast(CT_INT_REAL, modifiedRight);
         
@@ -240,6 +248,9 @@ EXPR new_expr_compr(EXPR left, COMPRTAG t, EXPR right)
     }
     else if (compatible == CONVERSION_REQUIRED)
     {
+        if (modifiedRight->expr_tag == TYFLOAT && modifiedLeft->expr_tag == TYSIGNEDLONGINT) modifiedLeft = new_expr_cast(CT_INT_SGL, modifiedLeft);
+        else if (modifiedRight->expr_tag == TYSIGNEDLONGINT && modifiedLeft->expr_tag == TYFLOAT) modifiedRight = new_expr_cast(CT_INT_SGL, modifiedRight);
+        
         if (modifiedRight->expr_tag == TYFLOAT) modifiedRight = new_expr_cast(CT_SGL_REAL, modifiedRight);
         else if (modifiedRight->expr_tag == TYSIGNEDLONGINT) modifiedRight = new_expr_cast(CT_INT_REAL, modifiedRight);
         
@@ -306,8 +317,8 @@ EXPR new_expr_unfunc(UNFUNCTAG t, EXPR_LIST rightList)
 	return newExpr;
 }
 
-/* New global variable expression */
-EXPR new_expr_var(ST_ID id)
+/* New global variable or function call expression */
+EXPR new_expr_identifier(ST_ID id)
 {
 	//allocate new EXPR
 	EXPR newExpr = (EXPR) malloc(sizeof(expression));
@@ -316,6 +327,7 @@ EXPR new_expr_var(ST_ID id)
     ST_DR record = st_lookup(id, &block);
     
     TYPETAG var_type = TYVOID;
+    EXPRTAG expr_t = E_VAR;
     
     if (!record)
     {
@@ -333,12 +345,69 @@ EXPR new_expr_var(ST_ID id)
         }
     }
 
-	newExpr->expr_tag = E_VAR;
+    if (var_type == TYFUNC)
+    {
+        PARAM_LIST params;
+        BOOLEAN check;
+        var_type = ty_query(ty_query_func(record->u.decl.type, &params, &check));
+        expr_t = E_FUNC;
+    }
+    
+    newExpr->expr_tag = expr_t;
     newExpr->expr_type = var_type;
-	newExpr->u.var_id = id;
-	if (debug == 1) msg("new_expr_var");
+    newExpr->u.var_func.var_id = id;
+	
+	if (debug == 1) msg("new_expr_identifier");
 
 	return newExpr;
+}
+
+EXPR new_expr_var_funccall(EXPR base, EXPR_LIST arguments)
+{
+    EXPR toReturn;
+
+    if (base->expr_tag == E_VAR)
+    {
+        if (arguments) { error("'%s' is a variable, but it's being treated as a function!", base->u.var_func.var_id); }
+        
+        toReturn = base;
+    }
+    else if (base->expr_tag == E_FUNC)
+    {
+        toReturn = (EXPR) malloc(sizeof(expression));
+        
+        int block;
+        ST_DR func_rec = st_lookup(base->u.var_func.var_id, &block);
+        
+        PARAM_LIST params;
+        BOOLEAN check;
+        TYPE func_type = ty_query_func(func_rec->u.decl.type, &params, &check);
+        
+        int numParams = 0;
+        while (params != NULL)
+        {
+            numParams++;
+            params = params->next;
+        }
+        
+        int numArgs = 0;
+        EXPR_LIST myArgs = arguments;
+        while (myArgs != NULL && myArgs->base != NULL)
+        {
+            numArgs++;
+            myArgs = myArgs->next;
+        }
+        
+        if (numParams != numArgs) { error("Function '%s' expected %d arguments, received %d", st_get_id_str(base->u.var_func.var_id), numParams, numArgs); }
+        
+        toReturn->expr_tag = E_FUNC;
+        toReturn->expr_type = base->expr_type;
+        toReturn->u.var_func.var_id = base->u.var_func.var_id;
+        toReturn->u.var_func.arguments = arguments;
+        
+    }
+    
+    return toReturn;
 }
 
 EXPR new_expr_cast(CASTTAG t, EXPR right)
@@ -350,9 +419,10 @@ EXPR new_expr_cast(CASTTAG t, EXPR right)
     switch (t)
     {
         case CT_LDEREF: newExpr->expr_type = right->expr_type; break;
-        case CT_SGL_REAL: newExpr->expr_type = TYDOUBLE; break;
-        case CT_REAL_SGL: newExpr->expr_type = TYFLOAT; break;
+        case CT_SGL_REAL:
         case CT_INT_REAL: newExpr->expr_type = TYDOUBLE; break;
+        case CT_REAL_SGL:
+        case CT_INT_SGL: newExpr->expr_type = TYFLOAT; break;
         default: error("Unknown cast tag encountered, %d", t); break;
     }
     
@@ -408,12 +478,12 @@ int require_type_conversion(EXPR left, EXPR right, int precedence, TYPETAG *requ
     {
         case -1: // Left precedence
             {
-                if ((typeLeft == TYDOUBLE && typeRight == TYFLOAT) || (typeLeft == TYDOUBLE && typeRight == TYSIGNEDLONGINT))
+                if (typeLeft == TYDOUBLE && (typeRight == TYFLOAT || typeRight == TYSIGNEDLONGINT))
                 {
                     *required = TYDOUBLE;
                     return CONVERSION_REQUIRED;
                 }
-                else if ((typeLeft == TYFLOAT && typeRight == TYDOUBLE))
+                else if (typeLeft == TYFLOAT && (typeRight == TYDOUBLE || typeRight == TYSIGNEDLONGINT))
                 {
                     *required = TYFLOAT;
                     return CONVERSION_REQUIRED;
@@ -422,12 +492,12 @@ int require_type_conversion(EXPR left, EXPR right, int precedence, TYPETAG *requ
             break;
         case 1: // Right precedence
             {
-                if ((typeLeft == TYFLOAT && typeRight == TYDOUBLE) || (typeLeft == TYSIGNEDLONGINT && typeRight == TYDOUBLE))
+                if ((typeLeft == TYFLOAT || typeLeft == TYSIGNEDLONGINT) && typeRight == TYDOUBLE)
                 {
                     *required = TYDOUBLE;
                     return CONVERSION_REQUIRED;
                 }
-                else if ((typeLeft == TYDOUBLE && typeRight == TYFLOAT))
+                else if ((typeLeft == TYDOUBLE || typeLeft == TYSIGNEDLONGINT) && typeRight == TYFLOAT)
                 {
                     *required = TYFLOAT;
                     return CONVERSION_REQUIRED;
@@ -444,6 +514,11 @@ int require_type_conversion(EXPR left, EXPR right, int precedence, TYPETAG *requ
                 else if ((typeLeft == TYFLOAT && typeRight == TYDOUBLE) || (typeLeft == TYSIGNEDLONGINT && typeRight == TYDOUBLE))
                 {
                     *required = TYDOUBLE;
+                    return CONVERSION_REQUIRED;
+                }
+                else if ((typeLeft == TYFLOAT && typeRight == TYSIGNEDLONGINT) || (typeLeft == TYSIGNEDLONGINT && typeRight == TYFLOAT))
+                {
+                    *required = TYFLOAT;
                     return CONVERSION_REQUIRED;
                 }
             }

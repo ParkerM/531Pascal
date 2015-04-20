@@ -7,6 +7,7 @@ void encode_compare_expr(EXPR expr);
 void encode_signed_expr(EXPR expr);
 void encode_unary_func_expr(EXPR expr);
 void encode_variable_expr(EXPR expr);
+void encode_function_call(EXPR expr);
 
 void encode_successor_func(EXPR expr);
 void encode_predecessor_func(EXPR expr);
@@ -180,6 +181,16 @@ int get_type_alignment(TYPE type)
   }
 }
 
+void start_main()
+{
+    b_func_prologue("main");
+}
+
+void end_main()
+{
+    b_func_epilogue("main");
+}
+
 /* -----=====----- EXPRESSIONS -----=====----- */
 void encode_expression(EXPR expr)
 {
@@ -219,6 +230,9 @@ void encode_expression(EXPR expr)
       break;
     case E_CAST:
       encode_cast_expr(expr);
+      break;
+    case E_FUNC:
+      encode_function_call(expr);
       break;
     default:
       bug("Encountered unknown expression type %d", expr->expr_tag);
@@ -296,6 +310,9 @@ void encode_cast_expr(EXPR expr)
     case CT_INT_REAL:
       b_convert(TYSIGNEDLONGINT, TYDOUBLE);
       break;
+    case CT_INT_SGL:
+      b_convert(TYSIGNEDLONGINT, TYFLOAT);
+      break;
     case CT_LDEREF:
       b_deref(expr->expr_type);
       break;
@@ -312,28 +329,44 @@ void encode_compare_expr(EXPR expr)
     fatal("Boolean expression is not of type TYSIGNEDCHAR.");
   }
   
+  TYPETAG argType = expr->left->expr_type;
+  
   encode_expression(expr->left);
+  
+  // Convert boolean and characters to integers, since that is what arith_rel_op expects.
+  if (argType == TYUNSIGNEDCHAR || argType == TYSIGNEDCHAR)
+  {
+    b_convert(argType, TYSIGNEDLONGINT);
+  }
+  
   encode_expression(expr->right);
+  
+  // Convert boolean and characters to integers, since that is what arith_rel_op expects.
+  if (argType == TYUNSIGNEDCHAR || argType == TYSIGNEDCHAR)
+  {
+    b_convert(argType, TYSIGNEDLONGINT);
+    argType = TYSIGNEDLONGINT;
+  }
   
   switch (expr->u.compr_tag)
   {
     case CM_EQUAL:
-      b_arith_rel_op(B_EQ, TYSIGNEDCHAR);
+      b_arith_rel_op(B_EQ, argType);
       break;
     case CM_NEQUAL:
-      b_arith_rel_op(B_NE, TYSIGNEDCHAR);
+      b_arith_rel_op(B_NE, argType);
       break;
     case CM_LESS:
-      b_arith_rel_op(B_LT, TYSIGNEDCHAR);
+      b_arith_rel_op(B_LT, argType);
       break;
     case CM_GTEQL:
-      b_arith_rel_op(B_GE, TYSIGNEDCHAR);
+      b_arith_rel_op(B_GE, argType);
       break;
     case CM_GREAT:
-      b_arith_rel_op(B_GT, TYSIGNEDCHAR);
+      b_arith_rel_op(B_GT, argType);
       break;
     case CM_LSEQL:
-      b_arith_rel_op(B_LE, TYSIGNEDCHAR);
+      b_arith_rel_op(B_LE, argType);
       break;
     default:
       bug("Unknown COMPR TAG encountered.");
@@ -385,9 +418,36 @@ void encode_unary_func_expr(EXPR expr)
 
 void encode_variable_expr(EXPR expr)
 {
-  char* gbl_var_id = st_get_id_str(expr->u.var_id);
+  char* gbl_var_id = st_get_id_str(expr->u.var_func.var_id);
   
   b_push_ext_addr(gbl_var_id);
+}
+
+void encode_function_call(EXPR expr)
+{
+  ST_ID func_id = expr->u.var_func.var_id;
+  char* func_name = st_get_id_str(func_id);
+  
+  EXPR_LIST arguments = expr->u.var_func.arguments;
+  
+  int sum = 0;
+  while (arguments != NULL && arguments->base != NULL)
+  {
+    TYPE t = ty_build_basic(arguments->base->expr_type);
+    sum += get_type_size(t);
+    arguments = arguments->next;
+  }
+  
+  b_alloc_arglist(sum);
+  
+  while (arguments != NULL && arguments->base != NULL)
+  {
+    encode_expression(arguments->base);
+    b_load_arg(arguments->base->expr_type);
+    arguments = arguments->next;
+  }
+  
+  b_funcall_by_name(func_name, expr->expr_type);
 }
 
 void encode_successor_func(EXPR child_expr)
@@ -435,6 +495,8 @@ void encode_predecessor_func(EXPR child_expr)
 {
   switch (child_expr->expr_tag)
   {
+    case E_FUNC:
+    case E_UNFUNC:
     case E_VAR:
       {
         encode_expression(child_expr);

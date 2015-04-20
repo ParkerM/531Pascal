@@ -200,7 +200,7 @@ pascal_program:
   ;
 
 main_program_declaration:
-    program_heading semi any_global_declaration_part statement_part
+    program_heading semi any_global_declaration_part { start_main(); } statement_part { end_main(); }
   ;
 
 program_heading:
@@ -737,7 +737,7 @@ for_direction:
 
 simple_statement:
     empty_statement { /* do nothing */ }
-  | assignment_or_call_statement
+  | assignment_or_call_statement { encode_expression($1); }
   | standard_procedure_statement { printf("Standard Procedure"); }
   | statement_extensions { /* ignore */ }
   ;
@@ -771,7 +771,7 @@ assignment_or_call_statement:
   ;
 
 variable_or_function_access_maybe_assignment:
-    identifier { $$ = new_expr_var($1); }
+    identifier { $$ = new_expr_identifier($1); }
   | address_operator variable_or_function_access { /* ignore */ }
   | variable_or_function_access_no_id
   ;
@@ -943,7 +943,7 @@ variable_or_function_access:
   ;
 
 variable_or_function_access_no_standard_function:
-    identifier { $$ = new_expr_var($1); }
+    identifier { $$ = new_expr_identifier($1); }
   | variable_or_function_access_no_id
   ;
 
@@ -954,7 +954,7 @@ variable_or_function_access_no_id:
   | '(' expression ')' { $$ = $2; }
   | variable_or_function_access pointer_char
   | variable_or_function_access '[' index_expression_list ']' { /* PROJECT III */ }
-  | variable_or_function_access_no_standard_function '(' actual_parameter_list ')' { /* TODO Function call */ }
+  | variable_or_function_access_no_standard_function '(' actual_parameter_list ')' { $$ = new_expr_var_funccall($1, $3); }
   | p_NEW '(' variable_access_or_typename ')' { /* TODO Pointer Variable */ }
   ;
 
