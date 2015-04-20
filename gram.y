@@ -556,7 +556,9 @@ one_case_constant:
    using a simple inherited attribute of type int */
 
 variable_declaration_part:
-    LEX_VAR variable_declaration_list { $$ = size_of_vars($2); }
+    LEX_VAR variable_declaration_list { 
+    $$ = size_of_vars($2); 
+    }
   ;
 
 variable_declaration_list:
@@ -565,7 +567,10 @@ variable_declaration_list:
   ;
 
 variable_declaration:
-    id_list ':' type_denoter semi 	{ vardec($1, $3); $$ = $1; }
+    id_list ':' type_denoter semi 	{ 
+    vardec($1, $3);
+    $$ = $1;
+    }
   ;
 
 function_declaration:
@@ -593,7 +598,6 @@ function_heading:
       $$ = make_typedef_node($2, ty_build_func(ty_build_basic(TYVOID), $3, TRUE));
     }
   | LEX_FUNCTION new_identifier optional_par_formal_parameter_list functiontype {
-      b_alloc_return_value();
       $$ = make_typedef_node($2, ty_build_func($4, $3, TRUE));
     }
   ;

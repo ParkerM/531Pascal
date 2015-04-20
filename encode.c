@@ -22,6 +22,7 @@ void encode(ST_ID id)
     switch(record->tag)
     {
       case GDECL:
+      case LDECL:
         b_global_decl(idStr, get_type_alignment(record->u.decl.type), get_type_size(record->u.decl.type));
         encode_decl_from_type(record->u.decl.type);
       break;

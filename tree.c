@@ -425,9 +425,14 @@ PARAM_LIST id_list_to_param_list(stid_list idList, TYPE listType, BOOLEAN isRef)
         {
             PARAM_LIST newItem = make_new_param_list(listType);
             list = append_to_param_list(list, newItem);
-            list = list->next;
         }
+        
         list->id = idList->enrollment_papers;
+        //message(st_get_id_str(list->id));      
+        if(isRef)
+        {
+        		list->type = ty_build_ptr(list->type);
+        }
         list->is_ref = isRef;
         idList = idList->next;
     }
@@ -492,15 +497,17 @@ void vardec(stid_list list, TYPE t)
         else
         {
             //This is a local variable
-            dr->tag = LDECL;
-            
+            dr->tag = LDECL;            
         }
         
         BOOLEAN newRec = st_install(list->enrollment_papers, dr);
         
         if (newRec)
         {
-          encode(list->enrollment_papers);
+				if(dr->tag != LDECL)
+				{
+				 	encode(list->enrollment_papers);
+				}
         }
         else
         {
