@@ -115,27 +115,17 @@ EXPR new_expr_arith(EXPR left, ARITHTAG t, EXPR right)
     }
     else if (compatible == CONVERSION_REQUIRED)
     {
-      if (modifiedLeft->expr_tag != required)
+      if (modifiedLeft->expr_type != required)
       {
         CASTTAG tag = get_cast_constant(modifiedLeft->expr_type, required);
         modifiedLeft = new_expr_cast(tag, modifiedLeft);
       }
       
-      if (modifiedRight->expr_tag != required)
+      if (modifiedRight->expr_type != required)
       {
         CASTTAG tag = get_cast_constant(modifiedRight->expr_type, required);
         modifiedRight = new_expr_cast(tag, modifiedRight);
       }
-      /*
-        if (modifiedRight->expr_tag == TYFLOAT && modifiedLeft->expr_tag == TYSIGNEDLONGINT) modifiedLeft = new_expr_cast(CT_INT_SGL, modifiedLeft);
-        else if (modifiedRight->expr_tag == TYSIGNEDLONGINT && modifiedLeft->expr_tag == TYFLOAT) modifiedRight = new_expr_cast(CT_INT_SGL, modifiedRight);
-        
-        else if (modifiedRight->expr_tag == TYFLOAT) modifiedRight = new_expr_cast(CT_SGL_REAL, modifiedRight);
-        else if (modifiedRight->expr_tag == TYSIGNEDLONGINT) modifiedRight = new_expr_cast(CT_INT_REAL, modifiedRight);
-        
-        else if (modifiedLeft->expr_tag == TYFLOAT) modifiedLeft = new_expr_cast(CT_SGL_REAL, modifiedLeft);
-        else if (modifiedLeft->expr_tag == TYSIGNEDLONGINT) modifiedLeft = new_expr_cast(CT_INT_REAL, modifiedLeft);
-      */
     }
     
 	//allocate new EXPR
@@ -262,13 +252,13 @@ EXPR new_expr_compr(EXPR left, COMPRTAG t, EXPR right)
     }
     else if (compatible == CONVERSION_REQUIRED)
     {
-        if (modifiedLeft->expr_tag != required)
+        if (modifiedLeft->expr_type != required)
         {
             CASTTAG tag = get_cast_constant(modifiedLeft->expr_type, required);
             modifiedLeft = new_expr_cast(tag, modifiedLeft);
         }
         
-        if (modifiedRight->expr_tag != required)
+        if (modifiedRight->expr_type != required)
         {
             CASTTAG tag = get_cast_constant(modifiedRight->expr_type, required);
             modifiedRight = new_expr_cast(tag, modifiedRight);

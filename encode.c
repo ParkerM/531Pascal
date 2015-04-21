@@ -372,6 +372,8 @@ void encode_compare_expr(EXPR expr)
       bug("Unknown COMPR TAG encountered.");
       break;
   }
+  
+  b_convert(TYSIGNEDLONGINT, TYSIGNEDCHAR);
 }
 
 void encode_signed_expr(EXPR expr)
@@ -508,6 +510,22 @@ void encode_predecessor_func(EXPR child_expr)
   {
     case E_FUNC:
     case E_UNFUNC:
+      {
+        encode_expression(child_expr);
+        if (child_expr->expr_type == TYUNSIGNEDCHAR)
+        {
+          b_convert(TYUNSIGNEDCHAR, TYSIGNEDLONGINT);
+          b_push_const_int(-1);
+          b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
+          b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
+        }
+        else
+        {
+          b_push_const_int(-1);
+          b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
+        }
+      }
+      break;
     case E_VAR:
       {
         encode_expression(child_expr);
