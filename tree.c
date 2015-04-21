@@ -358,8 +358,17 @@ BOOLEAN isOrdinalType(TYPETAG t)
     switch(t)
     {
         case TYUNSIGNEDCHAR:
+            return TRUE;
+        break;
+        
         case TYSIGNEDCHAR:
+            return TRUE;
+        break;
+        
         case TYSUBRANGE:
+            return TRUE;
+        break;
+        
         case TYSIGNEDLONGINT:
             return TRUE;
         break;

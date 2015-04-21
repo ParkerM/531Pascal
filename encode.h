@@ -14,4 +14,7 @@ void encode_expression(EXPR expr);
 int get_type_size(TYPE type);
 int get_type_alignment(TYPE type);
 
+void start_main();
+void end_main();
+
 #endif

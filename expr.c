@@ -98,6 +98,7 @@ EXPR new_expr_arith(EXPR left, ARITHTAG t, EXPR right)
     
     if (left->expr_tag == E_VAR)
     {
+        msg("casting left");
         modifiedLeft = new_expr_cast(CT_LDEREF, left);
     }
     
@@ -130,8 +131,8 @@ EXPR new_expr_arith(EXPR left, ARITHTAG t, EXPR right)
 	newExpr->u.arith_tag = t;
 	newExpr->expr_tag = E_ARITH;
 	newExpr->expr_type = modifiedLeft->expr_type;
-	newExpr->left = left;
-	newExpr->right = right;
+	newExpr->left = modifiedLeft;
+	newExpr->right = modifiedRight;
 	if (debug == 1) msg("new_expr_arith: ARITHTAG %i", newExpr->u.arith_tag);
 
 	return newExpr;
