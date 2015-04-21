@@ -33,6 +33,7 @@
  *   CONVERSION_REQUIRED     -- if types are not compatible, but a conversion can be done.
  */
 int require_type_conversion(EXPR left, EXPR right, int precedence, TYPETAG *required);
+CASTTAG get_cast_constant(TYPETAG from, TYPETAG to);
 
 int debug = 0; //set to 1 for debug messages
 
@@ -98,7 +99,6 @@ EXPR new_expr_arith(EXPR left, ARITHTAG t, EXPR right)
     
     if (left->expr_tag == E_VAR)
     {
-        msg("casting left");
         modifiedLeft = new_expr_cast(CT_LDEREF, left);
     }
     
@@ -115,15 +115,35 @@ EXPR new_expr_arith(EXPR left, ARITHTAG t, EXPR right)
     }
     else if (compatible == CONVERSION_REQUIRED)
     {
+      if (modifiedLeft->expr_tag != required)
+      {
+        ty_print_typetag(modifiedLeft->expr_type); msg(" type Left");
+        ty_print_typetag(required); msg(" type required");
+        CASTTAG tag = get_cast_constant(modifiedLeft->expr_type, required);
+        modifiedLeft = new_expr_cast(tag, modifiedLeft);
+      }
+      
+      if (modifiedRight->expr_tag != required)
+      {
+        ty_print_typetag(modifiedRight->expr_type); msg(" type Right");
+        ty_print_typetag(required); msg(" type required");
+        CASTTAG tag = get_cast_constant(modifiedRight->expr_type, required);
+        modifiedRight = new_expr_cast(tag, modifiedRight);
+      }
+      /*
         if (modifiedRight->expr_tag == TYFLOAT && modifiedLeft->expr_tag == TYSIGNEDLONGINT) modifiedLeft = new_expr_cast(CT_INT_SGL, modifiedLeft);
         else if (modifiedRight->expr_tag == TYSIGNEDLONGINT && modifiedLeft->expr_tag == TYFLOAT) modifiedRight = new_expr_cast(CT_INT_SGL, modifiedRight);
         
-        if (modifiedRight->expr_tag == TYFLOAT) modifiedRight = new_expr_cast(CT_SGL_REAL, modifiedRight);
+        else if (modifiedRight->expr_tag == TYFLOAT) modifiedRight = new_expr_cast(CT_SGL_REAL, modifiedRight);
         else if (modifiedRight->expr_tag == TYSIGNEDLONGINT) modifiedRight = new_expr_cast(CT_INT_REAL, modifiedRight);
         
-        if (modifiedLeft->expr_tag == TYFLOAT) modifiedLeft = new_expr_cast(CT_SGL_REAL, modifiedLeft);
+        else if (modifiedLeft->expr_tag == TYFLOAT) modifiedLeft = new_expr_cast(CT_SGL_REAL, modifiedLeft);
         else if (modifiedLeft->expr_tag == TYSIGNEDLONGINT) modifiedLeft = new_expr_cast(CT_INT_REAL, modifiedLeft);
+      */
     }
+    
+    ty_print_typetag(modifiedLeft->expr_type); msg(" type Left after convert");
+    ty_print_typetag(modifiedRight->expr_type); msg(" type Right after convert");
     
 	//allocate new EXPR
 	EXPR newExpr = (EXPR) malloc(sizeof(expression));
@@ -249,14 +269,17 @@ EXPR new_expr_compr(EXPR left, COMPRTAG t, EXPR right)
     }
     else if (compatible == CONVERSION_REQUIRED)
     {
-        if (modifiedRight->expr_tag == TYFLOAT && modifiedLeft->expr_tag == TYSIGNEDLONGINT) modifiedLeft = new_expr_cast(CT_INT_SGL, modifiedLeft);
-        else if (modifiedRight->expr_tag == TYSIGNEDLONGINT && modifiedLeft->expr_tag == TYFLOAT) modifiedRight = new_expr_cast(CT_INT_SGL, modifiedRight);
+        if (modifiedLeft->expr_tag != required)
+        {
+            CASTTAG tag = get_cast_constant(modifiedLeft->expr_type, required);
+            modifiedLeft = new_expr_cast(tag, modifiedLeft);
+        }
         
-        if (modifiedRight->expr_tag == TYFLOAT) modifiedRight = new_expr_cast(CT_SGL_REAL, modifiedRight);
-        else if (modifiedRight->expr_tag == TYSIGNEDLONGINT) modifiedRight = new_expr_cast(CT_INT_REAL, modifiedRight);
-        
-        if (modifiedLeft->expr_tag == TYFLOAT) modifiedRight = new_expr_cast(CT_SGL_REAL, modifiedLeft);
-        else if (modifiedLeft->expr_tag == TYSIGNEDLONGINT) modifiedRight = new_expr_cast(CT_INT_REAL, modifiedLeft);
+        if (modifiedRight->expr_tag != required)
+        {
+            CASTTAG tag = get_cast_constant(modifiedRight->expr_type, required);
+            modifiedRight = new_expr_cast(tag, modifiedRight);
+        }
     }
     
 	//allocate new EXPR
@@ -419,11 +442,11 @@ EXPR new_expr_cast(CASTTAG t, EXPR right)
     
     switch (t)
     {
-        case CT_LDEREF: newExpr->expr_type = right->expr_type; break;
-        case CT_SGL_REAL:
-        case CT_INT_REAL: newExpr->expr_type = TYDOUBLE; break;
-        case CT_REAL_SGL:
-        case CT_INT_SGL: newExpr->expr_type = TYFLOAT; break;
+        case CT_LDEREF: msg("Value deref"); newExpr->expr_type = right->expr_type; break;
+        case CT_SGL_REAL: msg("Single -> Real"); newExpr->expr_type = TYDOUBLE; break;
+        case CT_INT_REAL: msg("Integer -> Real"); newExpr->expr_type = TYDOUBLE; break;
+        case CT_REAL_SGL: msg("Real -> Single"); newExpr->expr_type = TYFLOAT;
+        case CT_INT_SGL: msg("Real -> Single"); newExpr->expr_type = TYFLOAT; break;
         default: error("Unknown cast tag encountered, %d", t); break;
     }
     
@@ -473,7 +496,7 @@ int require_type_conversion(EXPR left, EXPR right, int precedence, TYPETAG *requ
       ty_print_typetag(typeRight); msg("");
     }
         
-    if (typeLeft == typeRight) { return COMPLETELY_COMPATIBLE; }
+    if (typeLeft == typeRight) { *required = typeLeft; return COMPLETELY_COMPATIBLE; }
     
     switch (precedence)
     {
@@ -530,4 +553,37 @@ int require_type_conversion(EXPR left, EXPR right, int precedence, TYPETAG *requ
     }
     
     return COMPLETELY_INCOMPATIBLE;
+}
+
+CASTTAG get_cast_constant(TYPETAG from, TYPETAG to)
+{
+  if (from == TYFLOAT)
+  {
+    msg("        FROM FLOAT");
+    if (to == TYDOUBLE)
+    return CT_SGL_REAL;
+    
+  }
+  else if (from == TYDOUBLE)
+  {
+    msg("        FROM DOUBLE");
+    if (to == TYFLOAT)
+    return CT_REAL_SGL;
+  }
+  else if (from == TYSIGNEDLONGINT)
+  {
+    msg("        FROM INT");
+    if (to == TYFLOAT)
+    return CT_INT_SGL;
+    
+    if (to == TYDOUBLE)
+    return CT_INT_REAL;
+  }
+  else
+  {
+    msg("From not recognized ");
+    ty_print_typetag(from); msg(" is what is found.");
+  }
+  return 0;
+  
 }

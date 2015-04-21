@@ -398,6 +398,11 @@ void encode_unary_func_expr(EXPR expr)
     case UF_ORD:
       encode_expression(expr->right);
       
+      if (expr->right->expr_tag == E_VAR)
+      {
+        b_deref(expr->right->expr_type);
+      }
+      
       if (expr->right->expr_type != TYSIGNEDLONGINT)
       {
         b_convert(expr->right->expr_type, TYSIGNEDLONGINT);
@@ -405,6 +410,12 @@ void encode_unary_func_expr(EXPR expr)
       break;
     case UF_CHR:
       encode_expression(expr->right);
+      
+      if (expr->right->expr_tag == E_VAR)
+      {
+        b_deref(expr->right->expr_type);
+      }
+      
       b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
       break;
     case UF_SUCC:
