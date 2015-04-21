@@ -117,16 +117,12 @@ EXPR new_expr_arith(EXPR left, ARITHTAG t, EXPR right)
     {
       if (modifiedLeft->expr_tag != required)
       {
-        ty_print_typetag(modifiedLeft->expr_type); msg(" type Left");
-        ty_print_typetag(required); msg(" type required");
         CASTTAG tag = get_cast_constant(modifiedLeft->expr_type, required);
         modifiedLeft = new_expr_cast(tag, modifiedLeft);
       }
       
       if (modifiedRight->expr_tag != required)
       {
-        ty_print_typetag(modifiedRight->expr_type); msg(" type Right");
-        ty_print_typetag(required); msg(" type required");
         CASTTAG tag = get_cast_constant(modifiedRight->expr_type, required);
         modifiedRight = new_expr_cast(tag, modifiedRight);
       }
@@ -141,9 +137,6 @@ EXPR new_expr_arith(EXPR left, ARITHTAG t, EXPR right)
         else if (modifiedLeft->expr_tag == TYSIGNEDLONGINT) modifiedLeft = new_expr_cast(CT_INT_REAL, modifiedLeft);
       */
     }
-    
-    ty_print_typetag(modifiedLeft->expr_type); msg(" type Left after convert");
-    ty_print_typetag(modifiedRight->expr_type); msg(" type Right after convert");
     
 	//allocate new EXPR
 	EXPR newExpr = (EXPR) malloc(sizeof(expression));
@@ -442,11 +435,11 @@ EXPR new_expr_cast(CASTTAG t, EXPR right)
     
     switch (t)
     {
-        case CT_LDEREF: msg("Value deref"); newExpr->expr_type = right->expr_type; break;
-        case CT_SGL_REAL: msg("Single -> Real"); newExpr->expr_type = TYDOUBLE; break;
-        case CT_INT_REAL: msg("Integer -> Real"); newExpr->expr_type = TYDOUBLE; break;
-        case CT_REAL_SGL: msg("Real -> Single"); newExpr->expr_type = TYFLOAT;
-        case CT_INT_SGL: msg("Real -> Single"); newExpr->expr_type = TYFLOAT; break;
+        case CT_LDEREF: newExpr->expr_type = right->expr_type; break;
+        case CT_SGL_REAL: 
+        case CT_INT_REAL: newExpr->expr_type = TYDOUBLE; break;
+        case CT_REAL_SGL: 
+        case CT_INT_SGL: newExpr->expr_type = TYFLOAT; break;
         default: error("Unknown cast tag encountered, %d", t); break;
     }
     
@@ -559,20 +552,17 @@ CASTTAG get_cast_constant(TYPETAG from, TYPETAG to)
 {
   if (from == TYFLOAT)
   {
-    msg("        FROM FLOAT");
     if (to == TYDOUBLE)
     return CT_SGL_REAL;
     
   }
   else if (from == TYDOUBLE)
   {
-    msg("        FROM DOUBLE");
     if (to == TYFLOAT)
     return CT_REAL_SGL;
   }
   else if (from == TYSIGNEDLONGINT)
   {
-    msg("        FROM INT");
     if (to == TYFLOAT)
     return CT_INT_SGL;
     
@@ -581,7 +571,7 @@ CASTTAG get_cast_constant(TYPETAG from, TYPETAG to)
   }
   else
   {
-    msg("From not recognized ");
+    error("From not recognized ");
     ty_print_typetag(from); msg(" is what is found.");
   }
   return 0;
