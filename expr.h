@@ -37,7 +37,7 @@
  *     E_VAR        - A [global] variable. TODO: update for 100% level.
  *     E_CAST       - Inserted to cast types prior to operation.
  */
-typedef enum {E_ASSIGN, E_ARITH, E_SIGN, E_INTCONST, E_REALCONST, E_CHARCONST, E_BOOLCONST, E_COMPR, E_UNFUNC, E_VAR, E_CAST} EXPRTAG; 
+typedef enum {E_ASSIGN, E_ARITH, E_SIGN, E_INTCONST, E_REALCONST, E_CHARCONST, E_BOOLCONST, E_COMPR, E_UNFUNC, E_VAR, E_FUNC, E_CAST} EXPRTAG; 
 
 /* typedef enum ARITHTAG
  *
@@ -94,7 +94,9 @@ typedef enum {UF_ORD, UF_CHR, UF_SUCC, UF_PRED} UNFUNCTAG;
  *     CT_INT_REAL  - Converts an Integer to a Real.
  *     CT_LVAL_RVAL - Derefs an l-value into an r-value.
  */
-typedef enum {CT_SGL_REAL, CT_REAL_SGL, CT_INT_REAL, CT_LDEREF} CASTTAG;
+typedef enum {CT_SGL_REAL, CT_REAL_SGL, CT_INT_REAL, CT_INT_SGL, CT_LDEREF} CASTTAG;
+
+struct expr_list;
 
 typedef struct expression
 {
@@ -116,7 +118,11 @@ typedef struct expression
   	UNFUNCTAG unfunc_tag;
   	CASTTAG cast_tag;
   	
-  	ST_ID var_id;
+  	struct {
+  	  ST_ID var_id;
+  	  struct expr_list *arguments;
+  	} var_func;
+  	
   } u;
 } expression, *EXPR;
 
@@ -155,7 +161,9 @@ EXPR new_expr_compr(EXPR left, COMPRTAG t, EXPR right);
 EXPR new_expr_unfunc(UNFUNCTAG t, EXPR_LIST right);
 
 /* New global variable expression */
-EXPR new_expr_var(ST_ID id);
+EXPR new_expr_identifier(ST_ID id);
+
+EXPR new_expr_var_funccall(EXPR base, EXPR_LIST arguments);
 
 /* Create a new list of expression nodes */
 EXPR_LIST new_expr_list(EXPR item);
