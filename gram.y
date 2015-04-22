@@ -50,6 +50,7 @@
 #define YYDEBUG 1
 
 #include "tree.h"
+#include "encode.h"
 #include "expr.h"
 #include "functions.h"
 #include "types.h"
@@ -172,6 +173,8 @@ void yyerror(char *);
 %type <y_expr> standard_functions optional_par_actual_parameter
 %type <y_dir_list> directive_list
 %type <y_dir> directive
+
+%type <y_string> simple_if
 
 %type <y_expr> constant number unsigned_number constant_literal string predefined_literal
 
@@ -681,12 +684,33 @@ conditional_statement:
   ;
 
 simple_if:
-    LEX_IF boolean_expression LEX_THEN statement
+    LEX_IF boolean_expression LEX_THEN
+    {
+        char *after_if_label = new_symbol();
+        encode_expression($2);
+        b_cond_jump(TYSIGNEDCHAR, B_ZERO, after_if_label);
+        
+        $<y_string>$ = after_if_label;
+    }
+    statement
+    {
+        $$ = $<y_string>4;
+    }
   ;
 
 if_statement:
-    simple_if LEX_ELSE statement
-  | simple_if %prec prec_if
+    simple_if LEX_ELSE
+    {
+        char *end_label = new_symbol();
+        b_jump(end_label);
+        b_label($1);
+        $<y_string>$ = end_label;
+    }
+    statement
+    {
+        b_label($<y_string>3);
+    }
+  | simple_if %prec prec_if { b_label($1); }
   ;
 
 case_statement:
