@@ -123,4 +123,16 @@ void vardec(stid_list list, TYPE t);
 void paramdec(stid_list list, TYPE t);
 
 stid_list merge_stid_list(stid_list list1, stid_list list2);
+
+
+
+/* -----===== Control Structure-related Constructions =====----- */
+
+typedef struct
+{
+    char *conditional_label;
+    char *after_label;
+} control_labels;
+
+typedef enum { FOR_TO, FOR_DOWNTO } FOR_DIRECTION;
 #endif

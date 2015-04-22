@@ -60,6 +60,7 @@ void yyerror(char *);
 
 /* Like YYERROR but do call yyerror */
 #define YYERROR1 { yyerror ("syntax error"); YYERROR; }
+
 %}
 
 /* Start symbol for the grammar */
@@ -85,6 +86,9 @@ void yyerror(char *);
     DIRECTIVETYPE   y_dir;
     DIR_LIST        y_dir_list;
     PARAM_LIST 	  	y_param_list;
+    
+    control_labels  y_control;
+    FOR_DIRECTION   y_for_dir;
     
     num_const_p     y_num_const;
 }
@@ -175,6 +179,7 @@ void yyerror(char *);
 %type <y_dir> directive
 
 %type <y_string> simple_if
+%type <y_for_dir> for_direction
 
 %type <y_expr> constant number unsigned_number constant_literal string predefined_literal
 
@@ -703,7 +708,7 @@ if_statement:
     {
         char *end_label = new_symbol();
         b_jump(end_label);
-        b_label($1);
+        b_label($1); 
         $<y_string>$ = end_label;
     }
     statement
@@ -747,16 +752,78 @@ repeat_statement:
   ;
 
 while_statement:
-    LEX_WHILE boolean_expression LEX_DO statement
+    LEX_WHILE boolean_expression LEX_DO
+    {
+        char *while_cond_label = new_symbol();
+        char *while_after_label = new_symbol();
+        
+        b_label(while_cond_label);
+        encode_expression($2);
+        b_cond_jump(TYSIGNEDCHAR, B_ZERO, while_after_label);
+        
+        control_labels lbls = {while_cond_label, while_after_label};
+        $<y_control>$ = lbls;
+    }
+    statement
+    {
+        control_labels lbls = $<y_control>4;
+        b_jump(lbls.conditional_label);
+        b_label(lbls.after_label);
+    }
   ;
 
 for_statement:
-    LEX_FOR variable_or_function_access LEX_ASSIGN expression for_direction expression LEX_DO statement
+    LEX_FOR variable_or_function_access LEX_ASSIGN expression for_direction expression LEX_DO
+    {
+        char *for_cond_label = new_symbol();
+        char *for_exit_label = new_symbol();
+        
+        encode_expression($6);
+        if ($6->expr_tag == E_VAR) { b_deref($6->expr_type); }
+        EXPR index_assign = new_expr_assign($2, $4);
+        encode_expression(index_assign);
+        
+        b_label(for_cond_label);
+        
+        b_duplicate($6->expr_type);
+        encode_expression($2);
+        b_deref($2->expr_type);
+        
+        if ($5 == FOR_TO)
+        {
+            b_arith_rel_op(B_LT, TYSIGNEDLONGINT);
+        }
+        else //if ($5 == FOR_DOWNTO)
+        {
+            b_arith_rel_op(B_GT, TYSIGNEDLONGINT);
+        }
+        b_cond_jump(TYSIGNEDLONGINT, B_NONZERO, for_exit_label);
+        
+        control_labels lbls = { for_cond_label, for_exit_label };
+        
+        $<y_control>$ = lbls;
+        
+    }
+    statement
+    {
+        control_labels lbls = $<y_control>8;
+        
+        encode_expression($2);
+        
+        B_INC_DEC_OP idop = ($5 == FOR_TO) ? B_POST_INC : B_POST_DEC;
+        
+        b_inc_dec($2->expr_type, idop, 0);
+        b_pop();
+        
+        b_jump(lbls.conditional_label);
+        b_label(lbls.after_label);
+        b_pop();
+    }
   ;
 
 for_direction:
-    LEX_TO
-  | LEX_DOWNTO
+    LEX_TO      { $$ = FOR_TO; }
+  | LEX_DOWNTO  { $$ = FOR_DOWNTO; }
   ;
 
 simple_statement:
