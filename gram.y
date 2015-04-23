@@ -70,7 +70,7 @@ void yyerror(char *);
 /* The union representing a semantic stack entry */
 %union {
     char *          y_string;
-    int	            y_cint;
+    int	           y_cint;
     long            y_int;
     double          y_real;
     
@@ -78,16 +78,18 @@ void yyerror(char *);
     ST_ID           y_stid;
     
     typedef_item_p  y_typedef_item;
-    TYPE_LIST	      y_type_list;
+    TYPE_LIST	     y_type_list;
     TYPE            y_type;
 
-    EXPR		      	y_expr;
-    EXPR_LIST 	  	y_expr_list;
+    EXPR		        y_expr;
+    EXPR_LIST 	     y_expr_list;
     DIRECTIVETYPE   y_dir;
     DIR_LIST        y_dir_list;
-    PARAM_LIST 	  	y_param_list;
+    PARAM_LIST 	  y_param_list;
     
     control_labels  y_control;
+    CASE            y_case;
+    CASE_LIST       y_case_list;
     FOR_DIRECTION   y_for_dir;
     
     num_const_p     y_num_const;
@@ -172,14 +174,22 @@ void yyerror(char *);
 %type <y_expr> actual_parameter assignment_or_call_statement variable_or_function_access_maybe_assignment
 %type <y_expr> rest_of_statement /*standard_procedure_statement*/ index_expression_item
 %type <y_expr> static_expression boolean_expression expression simple_expression
+
+%type <y_expr> one_case_constant
+%type <y_expr_list> case_constant_list
+
 %type <y_expr> term signed_primary primary signed_factor factor variable_or_function_access
 %type <y_expr> variable_or_function_access_no_standard_function variable_or_function_access_no_id
 %type <y_expr> standard_functions optional_par_actual_parameter
+
 %type <y_dir_list> directive_list
 %type <y_dir> directive
 
 %type <y_string> simple_if
 %type <y_for_dir> for_direction
+
+%type <y_case>       
+%type <y_case_list>  
 
 %type <y_expr> constant number unsigned_number constant_literal string predefined_literal
 
@@ -719,7 +729,32 @@ if_statement:
   ;
 
 case_statement:
-    LEX_CASE expression LEX_OF case_element_list optional_semicolon_or_else_branch LEX_END
+    LEX_CASE expression LEX_OF {
+      char *end_label = new_symbol();
+      encode_expression($2);
+      $<y_string>$ = end_label;      
+    } case_element_list {
+      //encode_case_elements($5, $<y_string>4);
+      CASE_LiST currentNode = $5;
+      while(currentNode != NULL)
+      {
+        char *after_case_label = new_symbol();
+        CASE currentCase = currentNode->case_node;
+        
+        EXPR_LIST case_expr_list = currentCase->case_constants;
+        while(case_expr_list != NULL)
+        {        
+            
+            encode_expression(currentCase->case_statement);
+            case_expr_list = case_expr_list->next;     
+        }
+        
+        currentCase = currentCase->next;
+      }     
+      
+    } optional_semicolon_or_else_branch LEX_END {
+      b_label($<y_string>4);
+    }
   ;
 
 optional_semicolon_or_else_branch:
@@ -728,12 +763,14 @@ optional_semicolon_or_else_branch:
   ;
 
 case_element_list:
-    case_element
-  | case_element_list semi case_element
+    case_element { $$ = create_case_list($1); }
+  | case_element_list semi case_element { $$ = append_to_case_list($1, $3); }
   ;
 
 case_element:
-    case_constant_list ':' statement
+    case_constant_list ':' statement {
+      $$ = make_case_node($1, $2);
+    }
   ;
 
 case_default:
