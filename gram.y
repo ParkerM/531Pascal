@@ -779,15 +779,15 @@ for_statement:
         char *for_exit_label = new_symbol();
         
         encode_expression($6);
-        if ($6->expr_tag == E_VAR) { b_deref($6->expr_type); }
+        if ($6->expr_tag == E_VAR) { b_deref($6->expr_typetag); }
         EXPR index_assign = new_expr_assign($2, $4);
         encode_expression(index_assign);
         
         b_label(for_cond_label);
         
-        b_duplicate($6->expr_type);
+        b_duplicate($6->expr_typetag);
         encode_expression($2);
-        b_deref($2->expr_type);
+        b_deref($2->expr_typetag);
         
         if ($5 == FOR_TO)
         {
@@ -812,7 +812,7 @@ for_statement:
         
         B_INC_DEC_OP idop = ($5 == FOR_TO) ? B_POST_INC : B_POST_DEC;
         
-        b_inc_dec($2->expr_type, idop, 0);
+        b_inc_dec($2->expr_typetag, idop, 0);
         b_pop();
         
         b_jump(lbls.conditional_label);
@@ -1044,7 +1044,7 @@ variable_or_function_access_no_id:
   | variable_or_function_access '.' new_identifier { /* ignore */ }
   | '(' expression ')' { $$ = $2; }
   | variable_or_function_access pointer_char
-  | variable_or_function_access '[' index_expression_list ']' { /* PROJECT III */ }
+  | variable_or_function_access '[' index_expression_list ']' { new_expr_array($1, $3); }
   | variable_or_function_access_no_standard_function '(' actual_parameter_list ')' { $$ = new_expr_var_funccall($1, $3); }
   | p_NEW '(' variable_access_or_typename ')' { /* TODO Pointer Variable */ }
   ;

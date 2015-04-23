@@ -8,6 +8,7 @@ void encode_signed_expr(EXPR expr);
 void encode_unary_func_expr(EXPR expr);
 void encode_variable_expr(EXPR expr);
 void encode_function_call(EXPR expr);
+void encode_array(EXPR expr);
 
 void encode_successor_func(EXPR expr);
 void encode_predecessor_func(EXPR expr);
@@ -234,6 +235,9 @@ void encode_expression(EXPR expr)
     case E_FUNC:
       encode_function_call(expr);
       break;
+    case E_ARRAY:
+      encode_array(expr);
+      break;
     default:
       bug("Encountered unknown expression type %d", expr->expr_tag);
       break;
@@ -248,16 +252,16 @@ void encode_arith_expr(EXPR expr)
   switch (expr->u.arith_tag)
   {
     case AR_ADD:
-      b_arith_rel_op(B_ADD, expr->expr_type);
+      b_arith_rel_op(B_ADD, expr->expr_typetag);
       break;
     case AR_SUB:
-      b_arith_rel_op(B_SUB, expr->expr_type);
+      b_arith_rel_op(B_SUB, expr->expr_typetag);
       break;
     case AR_MULT:
-      b_arith_rel_op(B_MULT, expr->expr_type);
+      b_arith_rel_op(B_MULT, expr->expr_typetag);
       break;
     case AR_IDIV:
-      if (expr->expr_type != TYSIGNEDLONGINT)
+      if (expr->expr_typetag != TYSIGNEDLONGINT)
       {
         fatal("An integer division expression is not of type Integer!");
       }
@@ -267,17 +271,17 @@ void encode_arith_expr(EXPR expr)
       }
       break;
     case AR_RDIV:
-      if (expr->expr_type != TYDOUBLE || expr->expr_type != TYFLOAT)
+      if (expr->expr_typetag != TYDOUBLE || expr->expr_typetag != TYFLOAT)
       {
         fatal("A division expression is not of type Real or Single!");
       }
       else
       {
-        b_arith_rel_op(B_DIV, expr->expr_type);
+        b_arith_rel_op(B_DIV, expr->expr_typetag);
       }
       break;
     case AR_MOD:
-      b_arith_rel_op(B_MOD, expr->expr_type);
+      b_arith_rel_op(B_MOD, expr->expr_typetag);
       break;
     default:
       error("Unknown ARITH TAG encountered.");
@@ -290,7 +294,7 @@ void encode_assn_expr(EXPR expr)
   encode_expression(expr->left);
   encode_expression(expr->right);
   
-  b_assign(expr->expr_type);
+  b_assign(expr->expr_typetag);
   
   b_pop();
 }
@@ -314,7 +318,7 @@ void encode_cast_expr(EXPR expr)
       b_convert(TYSIGNEDLONGINT, TYFLOAT);
       break;
     case CT_LDEREF:
-      b_deref(expr->expr_type);
+      b_deref(expr->expr_typetag);
       break;
     default:
       bug("Unknown CAST TAG encountered.");
@@ -324,12 +328,12 @@ void encode_cast_expr(EXPR expr)
 
 void encode_compare_expr(EXPR expr)
 {
-  if (expr->expr_type != TYSIGNEDCHAR)
+  if (expr->expr_typetag != TYSIGNEDCHAR)
   {
     fatal("Boolean expression is not of type TYSIGNEDCHAR.");
   }
   
-  TYPETAG argType = expr->left->expr_type;
+  TYPETAG argType = expr->left->expr_typetag;
   
   encode_expression(expr->left);
   
@@ -386,7 +390,7 @@ void encode_signed_expr(EXPR expr)
       /* No op */
       break;
     case SI_MINUS:
-      b_negate(expr->expr_type);
+      b_negate(expr->expr_typetag);
       break;
     default:
       bug("Unknown SIGN TAG encountered.");
@@ -402,12 +406,12 @@ void encode_unary_func_expr(EXPR expr)
       
       if (expr->right->expr_tag == E_VAR)
       {
-        b_deref(expr->right->expr_type);
+        b_deref(expr->right->expr_typetag);
       }
       
-      if (expr->right->expr_type != TYSIGNEDLONGINT)
+      if (expr->right->expr_typetag != TYSIGNEDLONGINT)
       {
-        b_convert(expr->right->expr_type, TYSIGNEDLONGINT);
+        b_convert(expr->right->expr_typetag, TYSIGNEDLONGINT);
       }
       break;
     case UF_CHR:
@@ -415,7 +419,7 @@ void encode_unary_func_expr(EXPR expr)
       
       if (expr->right->expr_tag == E_VAR)
       {
-        b_deref(expr->right->expr_type);
+        b_deref(expr->right->expr_typetag);
       }
       
       b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
@@ -431,22 +435,22 @@ void encode_unary_func_expr(EXPR expr)
 
 void encode_variable_expr(EXPR expr)
 {
-  char* gbl_var_id = st_get_id_str(expr->u.var_func.var_id);
+  char* gbl_var_id = st_get_id_str(expr->u.var_func_array.var_id);
   
   b_push_ext_addr(gbl_var_id);
 }
 
 void encode_function_call(EXPR expr)
 {
-  ST_ID func_id = expr->u.var_func.var_id;
+  ST_ID func_id = expr->u.var_func_array.var_id;
   char* func_name = st_get_id_str(func_id);
   
-  EXPR_LIST arguments = expr->u.var_func.arguments;
+  EXPR_LIST arguments = expr->u.var_func_array.arguments;
   
   int sum = 0;
   while (arguments != NULL && arguments->base != NULL)
   {
-    TYPE t = ty_build_basic(arguments->base->expr_type);
+    TYPE t = ty_build_basic(arguments->base->expr_typetag);
     sum += get_type_size(t);
     arguments = arguments->next;
   }
@@ -456,11 +460,26 @@ void encode_function_call(EXPR expr)
   while (arguments != NULL && arguments->base != NULL)
   {
     encode_expression(arguments->base);
-    b_load_arg(arguments->base->expr_type);
+    b_load_arg(arguments->base->expr_typetag);
     arguments = arguments->next;
   }
   
-  b_funcall_by_name(func_name, expr->expr_type);
+  b_funcall_by_name(func_name, expr->expr_typetag);
+}
+
+void encode_array(EXPR expr)
+{
+  TYPE arrayType = expr->expr_fulltype;
+  
+  if (expr->u.var_func_array.array_base_function)
+  {
+    encode_function_call(expr->right);
+  }
+  else
+  {
+    char *array_var = st_get_id_str(expr->u.var_func_array.var_id);
+    b_push_ext_addr(array_var);
+  }
 }
 
 void encode_successor_func(EXPR child_expr)
@@ -470,8 +489,8 @@ void encode_successor_func(EXPR child_expr)
     case E_VAR:
       {
         encode_expression(child_expr);
-        b_deref(child_expr->expr_type);
-        if (child_expr->expr_type == TYUNSIGNEDCHAR)
+        b_deref(child_expr->expr_typetag);
+        if (child_expr->expr_typetag == TYUNSIGNEDCHAR)
         {
           b_convert(TYUNSIGNEDCHAR, TYSIGNEDLONGINT);
           b_push_const_int(1);
@@ -512,7 +531,7 @@ void encode_predecessor_func(EXPR child_expr)
     case E_UNFUNC:
       {
         encode_expression(child_expr);
-        if (child_expr->expr_type == TYUNSIGNEDCHAR)
+        if (child_expr->expr_typetag == TYUNSIGNEDCHAR)
         {
           b_convert(TYUNSIGNEDCHAR, TYSIGNEDLONGINT);
           b_push_const_int(-1);
@@ -529,8 +548,8 @@ void encode_predecessor_func(EXPR child_expr)
     case E_VAR:
       {
         encode_expression(child_expr);
-        b_deref(child_expr->expr_type);
-        if (child_expr->expr_type == TYUNSIGNEDCHAR)
+        b_deref(child_expr->expr_typetag);
+        if (child_expr->expr_typetag == TYUNSIGNEDCHAR)
         {
           b_convert(TYUNSIGNEDCHAR, TYSIGNEDLONGINT);
           b_push_const_int(-1);

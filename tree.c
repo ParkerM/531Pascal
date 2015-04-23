@@ -232,7 +232,7 @@ TYPE get_basic_type(char* typename)
 
 TYPE create_subrange(EXPR low, EXPR high)
 {
-  if (low->expr_type != TYSIGNEDLONGINT && high->expr_type != TYSIGNEDLONGINT)
+  if (low->expr_typetag != TYSIGNEDLONGINT && high->expr_typetag != TYSIGNEDLONGINT)
   {
     // not good!
     return NULL;
