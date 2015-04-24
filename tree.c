@@ -478,6 +478,7 @@ TYPE_LIST append_to_type_list(TYPE_LIST list, TYPE t)
     }
 
     current->next = newNode;
+    newNode->prev = current;
     
     return list;
 }

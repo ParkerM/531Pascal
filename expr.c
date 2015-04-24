@@ -422,17 +422,17 @@ EXPR new_expr_var_funccall(EXPR base, EXPR_LIST arguments)
 
 EXPR new_expr_array(EXPR base, EXPR_LIST indices)
 {
-  // If the base expression is already an array, then append the new indices to the existing ones.
+  // If the base expression is already an array, then append the new indices to the head of the existing ones.
   if (base->expr_tag == E_ARRAY)
   {
-    EXPR_LIST oldList = base->u.var_func_array.arguments;
+    EXPR_LIST oldList = indices;
     
     while (oldList->next)
     {
       oldList = oldList->next;
     }
     
-    oldList->next = indices;
+    oldList->next = base->u.var_func_array.arguments;
   }
   // If the base expression is just a variable name, create a new array node.
   else if (base->expr_tag == E_VAR)

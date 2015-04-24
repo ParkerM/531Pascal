@@ -13,6 +13,8 @@ void encode_array(EXPR expr);
 void encode_successor_func(EXPR expr);
 void encode_predecessor_func(EXPR expr);
 
+int get_idx_list_size(INDEX_LIST list);
+int get_expr_list_size(EXPR_LIST list);
 
 void encode(ST_ID id)
 {
@@ -470,6 +472,8 @@ void encode_function_call(EXPR expr)
 void encode_array(EXPR expr)
 {
   TYPE arrayType = expr->expr_fulltype;
+  INDEX_LIST allIndices;
+  EXPR_LIST indexExprs = expr->u.var_func_array.arguments;
   
   if (expr->u.var_func_array.array_base_function)
   {
@@ -480,6 +484,38 @@ void encode_array(EXPR expr)
     char *array_var = st_get_id_str(expr->u.var_func_array.var_id);
     b_push_ext_addr(array_var);
   }
+  
+  TYPE arrayIdxType = ty_query_array(arrayType, &allIndices);
+  
+  while (arrayIdxType != TYARRAY)
+  {
+    INDEX_LIST moreIndices;
+    arrayIdxType = ty_query_array(arrayIdxType, &moreIndices);
+    INDEX_LIST currentIndex = allIndices;
+    
+    while(currentIndex->next)
+    {
+      currentIndex = currentIndex->next;
+    }
+    
+    currentIndex->next = moreIndices;
+  }
+  
+  int idx_size = get_idx_list_size(allIndices);
+  int expr_size = get_expr_list_size(indexExprs);
+  
+  if (idx_size < expr_size)
+  {
+    error("Too many indices given for array. Expected %d %s but %d %s given.", idx_size, (idx_size == 1) "index" : "indices", expr_size, (expr_size == 1)"was":"were");
+    return;
+  }
+  else if (idx_size > expr_size)
+  {
+    error("Too few indices given for array. Expected %d %s but %d %s given.", idx_size, (idx_size == 1) "index" : "indices", expr_size, (expr_size == 1)"was":"were");
+    return;
+  }
+  
+  
 }
 
 void encode_successor_func(EXPR child_expr)
@@ -580,4 +616,32 @@ void encode_predecessor_func(EXPR child_expr)
     default:
       bug("Predecessor needs an ordinal type!");
   }
+}
+
+int get_idx_list_size(INDEX_LIST list)
+{
+  INDEX_LIST currentItem = list;
+  int size = 0;
+  
+  while (currentItem)
+  {
+    currentItem = currentItem->next;
+    size++;
+  }
+  
+  return size;
+}
+
+int get_expr_list_size(EXPR_LIST list)
+{
+  EXPR_LIST currentItem = list;
+  int size = 0;
+  
+  while (currentItem)
+  {
+    currentItem = currentItem->next;
+    size++;
+  }
+  
+  return size;
 }
