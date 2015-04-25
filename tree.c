@@ -401,8 +401,15 @@ PARAM_LIST make_new_param_list(TYPE t)
 
 PARAM_LIST append_to_param_list(PARAM_LIST list, PARAM_LIST p)
 {
-   p->next = list;
-   return p;
+    PARAM_LIST currentItem = list;
+
+    while (currentItem->next)
+    {
+        currentItem = currentItem->next;
+    }
+    
+    currentItem->next = p;
+    return list;
 }
 
 PARAM_LIST merge_param_lists(PARAM_LIST list1, PARAM_LIST list2)
@@ -458,7 +465,6 @@ TYPE_LIST make_new_type_list(TYPE t)
     // Explicitly set the next pointer to NULL and copy the types from item
     value->type = t;
     value->next = NULL;
-    value->prev = NULL;
     
     return value;
 }
@@ -478,7 +484,6 @@ TYPE_LIST append_to_type_list(TYPE_LIST list, TYPE t)
     }
 
     current->next = newNode;
-    newNode->prev = current;
     
     return list;
 }

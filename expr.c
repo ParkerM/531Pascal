@@ -45,7 +45,7 @@ EXPR new_expr_assign(EXPR left, EXPR right)
     
     EXPR modifiedRight = right;
     
-    if (right->expr_tag == E_VAR)
+    if (right->expr_tag == E_VAR || right->expr_tag == E_ARRAY)
     {
         modifiedRight = new_expr_cast(CT_LDEREF, right);
     }
@@ -97,12 +97,12 @@ EXPR new_expr_arith(EXPR left, ARITHTAG t, EXPR right)
     EXPR modifiedLeft = left;
     EXPR modifiedRight = right;
     
-    if (left->expr_tag == E_VAR)
+    if (left->expr_tag == E_VAR || left->expr_tag == E_ARRAY)
     {
         modifiedLeft = new_expr_cast(CT_LDEREF, left);
     }
     
-    if (right->expr_tag == E_VAR)
+    if (right->expr_tag == E_VAR || right->expr_tag == E_ARRAY)
     {
         modifiedRight = new_expr_cast(CT_LDEREF, right);
     }
@@ -146,7 +146,7 @@ EXPR new_expr_sign(int sign, EXPR right)
 {
     EXPR modifiedRight = right;
     
-    if (right->expr_tag == E_VAR)
+    if (right->expr_tag == E_VAR || right->expr_tag == E_ARRAY)
     {
         modifiedRight = new_expr_cast(CT_LDEREF, right);
     }
@@ -234,12 +234,12 @@ EXPR new_expr_compr(EXPR left, COMPRTAG t, EXPR right)
     EXPR modifiedLeft = left;
     EXPR modifiedRight = right;
     
-    if (left->expr_tag == E_VAR)
+    if (left->expr_tag == E_VAR || left->expr_tag == E_ARRAY)
     {
         modifiedLeft = new_expr_cast(CT_LDEREF, left);
     }
     
-    if (right->expr_tag == E_VAR)
+    if (right->expr_tag == E_VAR || right->expr_tag == E_ARRAY)
     {
         modifiedRight = new_expr_cast(CT_LDEREF, right);
     }
@@ -362,6 +362,19 @@ EXPR new_expr_identifier(ST_ID id)
         expr_t = E_FUNC;
     }
     
+    if (var_typetag == TYARRAY)
+    {
+        INDEX_LIST indices;
+        TYPE arrayElemType = ty_query_array(var_type, &indices);
+        
+        while (ty_query(arrayElemType) == TYARRAY)
+        {
+            arrayElemType = ty_query_array(arrayElemType, &indices);
+        }
+        
+        var_typetag = ty_query(arrayElemType);
+    }
+    
     newExpr->expr_tag = expr_t;
     newExpr->expr_typetag = var_typetag;
     newExpr->expr_fulltype = var_type;
@@ -425,14 +438,14 @@ EXPR new_expr_array(EXPR base, EXPR_LIST indices)
   // If the base expression is already an array, then append the new indices to the head of the existing ones.
   if (base->expr_tag == E_ARRAY)
   {
-    EXPR_LIST oldList = indices;
+    EXPR_LIST oldList = base->u.var_func_array.arguments;
     
     while (oldList->next)
     {
       oldList = oldList->next;
     }
     
-    oldList->next = base->u.var_func_array.arguments;
+    oldList->next = indices;
   }
   // If the base expression is just a variable name, create a new array node.
   else if (base->expr_tag == E_VAR)
@@ -505,12 +518,20 @@ EXPR_LIST append_to_expr_list(EXPR_LIST list, EXPR newItem)
 	//allocate new EXPR_LIST
 	EXPR_LIST newList = (EXPR_LIST) malloc(sizeof(expr_list_node));
 
-	//put newList at the head of list and assign the expression
-	newList->next = list;
+    EXPR_LIST listRef = list;
+    
+    while (listRef->next)
+    {
+        listRef = listRef->next;
+    }
+
+	//put newList at the tail of list and assign the expression
+	listRef->next = newList;
+    newList->next = NULL;
 	newList->base = newItem;
 	if (debug == 1) msg("append_to_expr_list");
 
-	return newList;
+	return list;
 }
 
 int require_type_conversion(EXPR left, EXPR right, int precedence, TYPETAG *required)
