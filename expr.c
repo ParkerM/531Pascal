@@ -45,7 +45,7 @@ EXPR new_expr_assign(EXPR left, EXPR right)
     
     EXPR modifiedRight = right;
     
-    if (right->expr_tag == E_VAR)
+    if (right->expr_tag == E_VAR || right->expr_tag == E_ARRAY)
     {
         modifiedRight = new_expr_cast(CT_LDEREF, right);
     }
@@ -53,24 +53,24 @@ EXPR new_expr_assign(EXPR left, EXPR right)
     if (compatible == COMPLETELY_INCOMPATIBLE)
     {
         error("Illegal conversion between types.");
-        ty_print_typetag(left->expr_type); msg("");
-        ty_print_typetag(modifiedRight->expr_type); msg("");
+        ty_print_typetag(left->expr_typetag); msg("");
+        ty_print_typetag(modifiedRight->expr_typetag); msg("");
     }
     else if (compatible == CONVERSION_REQUIRED)
     {
-        if (modifiedRight->expr_type == TYFLOAT && required == TYDOUBLE)
+        if (modifiedRight->expr_typetag == TYFLOAT && required == TYDOUBLE)
         {
             modifiedRight = new_expr_cast(CT_SGL_REAL, modifiedRight);
         }
-        else if (modifiedRight->expr_type == TYDOUBLE && required == TYFLOAT)
+        else if (modifiedRight->expr_typetag == TYDOUBLE && required == TYFLOAT)
         {
             modifiedRight = new_expr_cast(CT_REAL_SGL, modifiedRight);
         }
-        else if (modifiedRight->expr_type == TYSIGNEDLONGINT && required == TYDOUBLE)
+        else if (modifiedRight->expr_typetag == TYSIGNEDLONGINT && required == TYDOUBLE)
         {
             modifiedRight = new_expr_cast(CT_INT_REAL, modifiedRight);
         }
-        else if (modifiedRight->expr_type == TYSIGNEDLONGINT && required == TYFLOAT)
+        else if (modifiedRight->expr_typetag == TYSIGNEDLONGINT && required == TYFLOAT)
         {
             modifiedRight = new_expr_cast(CT_INT_SGL, modifiedRight);
         }
@@ -80,7 +80,7 @@ EXPR new_expr_assign(EXPR left, EXPR right)
 	EXPR newExpr = (EXPR) malloc(sizeof(expression));
 
 	newExpr->expr_tag = E_ASSIGN;
-	newExpr->expr_type = left->expr_type;
+	newExpr->expr_typetag = left->expr_typetag;
 	newExpr->left = left;
 	newExpr->right = modifiedRight;
 	if (debug == 1) msg("new_expr_assign");
@@ -97,12 +97,12 @@ EXPR new_expr_arith(EXPR left, ARITHTAG t, EXPR right)
     EXPR modifiedLeft = left;
     EXPR modifiedRight = right;
     
-    if (left->expr_tag == E_VAR)
+    if (left->expr_tag == E_VAR || left->expr_tag == E_ARRAY)
     {
         modifiedLeft = new_expr_cast(CT_LDEREF, left);
     }
     
-    if (right->expr_tag == E_VAR)
+    if (right->expr_tag == E_VAR || right->expr_tag == E_ARRAY)
     {
         modifiedRight = new_expr_cast(CT_LDEREF, right);
     }
@@ -110,20 +110,20 @@ EXPR new_expr_arith(EXPR left, ARITHTAG t, EXPR right)
     if (compatible == COMPLETELY_INCOMPATIBLE)
     {
         error("Illegal conversion between types.");
-        ty_print_typetag(modifiedLeft->expr_type); msg("");
-        ty_print_typetag(modifiedRight->expr_type); msg("");
+        ty_print_typetag(modifiedLeft->expr_typetag); msg("");
+        ty_print_typetag(modifiedRight->expr_typetag); msg("");
     }
     else if (compatible == CONVERSION_REQUIRED)
     {
-      if (modifiedLeft->expr_type != required)
+      if (modifiedLeft->expr_typetag != required)
       {
-        CASTTAG tag = get_cast_constant(modifiedLeft->expr_type, required);
+        CASTTAG tag = get_cast_constant(modifiedLeft->expr_typetag, required);
         modifiedLeft = new_expr_cast(tag, modifiedLeft);
       }
       
-      if (modifiedRight->expr_type != required)
+      if (modifiedRight->expr_typetag != required)
       {
-        CASTTAG tag = get_cast_constant(modifiedRight->expr_type, required);
+        CASTTAG tag = get_cast_constant(modifiedRight->expr_typetag, required);
         modifiedRight = new_expr_cast(tag, modifiedRight);
       }
     }
@@ -133,7 +133,7 @@ EXPR new_expr_arith(EXPR left, ARITHTAG t, EXPR right)
 
 	newExpr->u.arith_tag = t;
 	newExpr->expr_tag = E_ARITH;
-	newExpr->expr_type = modifiedLeft->expr_type;
+	newExpr->expr_typetag = modifiedLeft->expr_typetag;
 	newExpr->left = modifiedLeft;
 	newExpr->right = modifiedRight;
 	if (debug == 1) msg("new_expr_arith: ARITHTAG %i", newExpr->u.arith_tag);
@@ -146,7 +146,7 @@ EXPR new_expr_sign(int sign, EXPR right)
 {
     EXPR modifiedRight = right;
     
-    if (right->expr_tag == E_VAR)
+    if (right->expr_tag == E_VAR || right->expr_tag == E_ARRAY)
     {
         modifiedRight = new_expr_cast(CT_LDEREF, right);
     }
@@ -163,7 +163,7 @@ EXPR new_expr_sign(int sign, EXPR right)
 		tag = SI_MINUS;
 		newExpr->u.sign_tag = tag;		
 	} else error("incorrect sign value");
-    newExpr->expr_type = modifiedRight->expr_type;
+    newExpr->expr_typetag = modifiedRight->expr_typetag;
 	newExpr->right = modifiedRight;
 	if (debug ==1) msg("new_expr_sign: SIGNTAG %i", newExpr->u.sign_tag);
 
@@ -177,7 +177,7 @@ EXPR new_expr_intconst(long i)
 	EXPR newExpr = (EXPR) malloc(sizeof(expression));
 
 	newExpr->expr_tag = E_INTCONST;
-    newExpr->expr_type = TYSIGNEDLONGINT;
+    newExpr->expr_typetag = TYSIGNEDLONGINT;
 	newExpr->u.integer = i;
 	if (debug == 1) msg("new_expr_intconst %li", newExpr->u.integer);
 
@@ -192,7 +192,7 @@ EXPR new_expr_realconst(double d)
 	EXPR newExpr = (EXPR) malloc(sizeof(expression));
 
 	newExpr->expr_tag = E_REALCONST;
-    newExpr->expr_type = TYDOUBLE;
+    newExpr->expr_typetag = TYDOUBLE;
 	newExpr->u.real = d;
 	if (debug == 1) msg("new_expr_realconst %f", newExpr->u.real);
 
@@ -205,7 +205,7 @@ EXPR new_expr_strconst(char *str)
     EXPR newExpr = (EXPR) malloc(sizeof(expression));
     
     newExpr->expr_tag = E_CHARCONST;
-    newExpr->expr_type = TYUNSIGNEDCHAR;
+    newExpr->expr_typetag = TYUNSIGNEDCHAR;
     newExpr->u.character = str[0];
     if (debug) msg("new_expr_strconst %s", newExpr->u.character);
     
@@ -218,7 +218,7 @@ EXPR new_expr_boolconst(int bool)
     EXPR newExpr = (EXPR) malloc(sizeof(expression));
     
     newExpr->expr_tag = E_BOOLCONST;
-    newExpr->expr_type = TYSIGNEDCHAR;
+    newExpr->expr_typetag = TYSIGNEDCHAR;
     newExpr->u.bool = bool;
     if (debug == 1) msg("new_expr_boolconst %s", (bool == 0) ? "false" : "true");
     
@@ -234,12 +234,12 @@ EXPR new_expr_compr(EXPR left, COMPRTAG t, EXPR right)
     EXPR modifiedLeft = left;
     EXPR modifiedRight = right;
     
-    if (left->expr_tag == E_VAR)
+    if (left->expr_tag == E_VAR || left->expr_tag == E_ARRAY)
     {
         modifiedLeft = new_expr_cast(CT_LDEREF, left);
     }
     
-    if (right->expr_tag == E_VAR)
+    if (right->expr_tag == E_VAR || right->expr_tag == E_ARRAY)
     {
         modifiedRight = new_expr_cast(CT_LDEREF, right);
     }
@@ -247,20 +247,20 @@ EXPR new_expr_compr(EXPR left, COMPRTAG t, EXPR right)
     if (compatible == COMPLETELY_INCOMPATIBLE)
     {
         error("Illegal conversion between types.");
-        ty_print_typetag(modifiedLeft->expr_type); error("");
-        ty_print_typetag(modifiedRight->expr_type); error("");
+        ty_print_typetag(modifiedLeft->expr_typetag); error("");
+        ty_print_typetag(modifiedRight->expr_typetag); error("");
     }
     else if (compatible == CONVERSION_REQUIRED)
     {
-        if (modifiedLeft->expr_type != required)
+        if (modifiedLeft->expr_typetag != required)
         {
-            CASTTAG tag = get_cast_constant(modifiedLeft->expr_type, required);
+            CASTTAG tag = get_cast_constant(modifiedLeft->expr_typetag, required);
             modifiedLeft = new_expr_cast(tag, modifiedLeft);
         }
         
-        if (modifiedRight->expr_type != required)
+        if (modifiedRight->expr_typetag != required)
         {
-            CASTTAG tag = get_cast_constant(modifiedRight->expr_type, required);
+            CASTTAG tag = get_cast_constant(modifiedRight->expr_typetag, required);
             modifiedRight = new_expr_cast(tag, modifiedRight);
         }
     }
@@ -269,7 +269,7 @@ EXPR new_expr_compr(EXPR left, COMPRTAG t, EXPR right)
 	EXPR newExpr = (EXPR) malloc(sizeof(expression));
 
 	newExpr->expr_tag = E_COMPR;
-    newExpr->expr_type = TYSIGNEDCHAR;
+    newExpr->expr_typetag = TYSIGNEDCHAR;
 	newExpr->u.compr_tag = t;
 	newExpr->left = modifiedLeft;
 	newExpr->right = modifiedRight;
@@ -282,7 +282,7 @@ EXPR new_expr_compr(EXPR left, COMPRTAG t, EXPR right)
 EXPR new_expr_unfunc(UNFUNCTAG t, EXPR_LIST rightList)
 {
     
-    TYPETAG rightExprType = rightList->base->expr_type;
+    TYPETAG rightExprType = rightList->base->expr_typetag;
     TYPETAG superExprType = TYVOID;
     BOOLEAN typeOK = TRUE;
     
@@ -315,7 +315,7 @@ EXPR new_expr_unfunc(UNFUNCTAG t, EXPR_LIST rightList)
 	EXPR newExpr = (EXPR) malloc(sizeof(expression));
 
 	newExpr->expr_tag = E_UNFUNC;
-    newExpr->expr_type = superExprType;
+    newExpr->expr_typetag = superExprType;
 	newExpr->right = rightList->base;
 	newExpr->u.unfunc_tag = t;
 	
@@ -333,7 +333,8 @@ EXPR new_expr_identifier(ST_ID id)
     int block;
     ST_DR record = st_lookup(id, &block);
     
-    TYPETAG var_type = TYVOID;
+    TYPETAG var_typetag = TYVOID;
+    TYPE    var_type = NULL;
     EXPRTAG expr_t = E_VAR;
     
     if (!record)
@@ -348,23 +349,38 @@ EXPR new_expr_identifier(ST_ID id)
         }
         else
         {
-            var_type = ty_query(record->u.decl.type);
+            var_type = record->u.decl.type;
+            var_typetag = ty_query(var_type);
         }
     }
-
-    if (var_type == TYFUNC)
+    
+    if (var_typetag == TYFUNC)
     {
         PARAM_LIST params;
         BOOLEAN check;
-        var_type = ty_query(ty_query_func(record->u.decl.type, &params, &check));
+        var_typetag = ty_query(ty_query_func(var_type, &params, &check));
         expr_t = E_FUNC;
     }
     
+    if (var_typetag == TYARRAY)
+    {
+        INDEX_LIST indices;
+        TYPE arrayElemType = ty_query_array(var_type, &indices);
+        
+        while (ty_query(arrayElemType) == TYARRAY)
+        {
+            arrayElemType = ty_query_array(arrayElemType, &indices);
+        }
+        
+        var_typetag = ty_query(arrayElemType);
+    }
+    
     newExpr->expr_tag = expr_t;
-    newExpr->expr_type = var_type;
-    newExpr->u.var_func.var_id = id;
+    newExpr->expr_typetag = var_typetag;
+    newExpr->expr_fulltype = var_type;
+    newExpr->u.var_func_array.var_id = id;
 	
-	if (debug == 1) msg("new_expr_identifier");
+	if (debug == 1) msg("new_expr_identifier var/func");
 
 	return newExpr;
 }
@@ -375,7 +391,7 @@ EXPR new_expr_var_funccall(EXPR base, EXPR_LIST arguments)
 
     if (base->expr_tag == E_VAR)
     {
-        if (arguments) { error("'%s' is a variable, but it's being treated as a function!", base->u.var_func.var_id); }
+        if (arguments) { error("'%s' is a variable, but it's being treated as a function!", base->u.var_func_array.var_id); }
         
         toReturn = base;
     }
@@ -384,7 +400,7 @@ EXPR new_expr_var_funccall(EXPR base, EXPR_LIST arguments)
         toReturn = (EXPR) malloc(sizeof(expression));
         
         int block;
-        ST_DR func_rec = st_lookup(base->u.var_func.var_id, &block);
+        ST_DR func_rec = st_lookup(base->u.var_func_array.var_id, &block);
         
         PARAM_LIST params;
         BOOLEAN check;
@@ -405,16 +421,59 @@ EXPR new_expr_var_funccall(EXPR base, EXPR_LIST arguments)
             myArgs = myArgs->next;
         }
         
-        if (numParams != numArgs) { error("Function '%s' expected %d arguments, received %d", st_get_id_str(base->u.var_func.var_id), numParams, numArgs); }
+        if (numParams != numArgs) { error("Function '%s' expected %d arguments, received %d", st_get_id_str(base->u.var_func_array.var_id), numParams, numArgs); }
         
         toReturn->expr_tag = E_FUNC;
-        toReturn->expr_type = base->expr_type;
-        toReturn->u.var_func.var_id = base->u.var_func.var_id;
-        toReturn->u.var_func.arguments = arguments;
+        toReturn->expr_typetag = base->expr_typetag;
+        toReturn->u.var_func_array.var_id = base->u.var_func_array.var_id;
+        toReturn->u.var_func_array.arguments = arguments;
         
     }
     
     return toReturn;
+}
+
+EXPR new_expr_array(EXPR base, EXPR_LIST indices)
+{
+  // If the base expression is already an array, then append the new indices to the head of the existing ones.
+  if (base->expr_tag == E_ARRAY)
+  {
+    EXPR_LIST oldList = base->u.var_func_array.arguments;
+    
+    while (oldList->next)
+    {
+      oldList = oldList->next;
+    }
+    
+    oldList->next = indices;
+  }
+  // If the base expression is just a variable name, create a new array node.
+  else if (base->expr_tag == E_VAR)
+  {
+    base->expr_tag = E_ARRAY;
+    base->u.var_func_array.arguments = indices;
+  }
+  else if (base->expr_tag == E_FUNC)
+  {
+    EXPR arrayExpr = (EXPR) malloc(sizeof(expression));
+    
+    arrayExpr->expr_tag = E_ARRAY;
+    arrayExpr->expr_typetag = base->expr_typetag;
+    arrayExpr->expr_fulltype = ty_query_func(base->expr_fulltype, NULL, NULL);
+    arrayExpr->right = base;
+    arrayExpr->u.var_func_array.var_id = base->u.var_func_array.var_id;
+    arrayExpr->u.var_func_array.arguments = indices;
+    arrayExpr->u.var_func_array.array_base_function = TRUE;
+    
+    return arrayExpr;
+  }
+  // Any other base expression type is an error.
+  else
+  {
+    bug("Received inappropriate expression tag to new_expr_array(%d, ...)", base->expr_tag);
+  }
+  
+  return base;
 }
 
 EXPR new_expr_cast(CASTTAG t, EXPR right)
@@ -425,19 +484,19 @@ EXPR new_expr_cast(CASTTAG t, EXPR right)
     
     switch (t)
     {
-        case CT_LDEREF: newExpr->expr_type = right->expr_type; break;
+        case CT_LDEREF: newExpr->expr_typetag = right->expr_typetag; break;
         case CT_SGL_REAL: 
-        case CT_INT_REAL: newExpr->expr_type = TYDOUBLE; break;
-        case CT_REAL_SGL: 
-        case CT_INT_SGL: newExpr->expr_type = TYFLOAT; break;
-        case CT_CHAR_INT: newExpr->expr_type = TYSIGNEDLONGINT; break;
+        case CT_INT_REAL: newExpr->expr_typetag = TYDOUBLE; break;
+        case CT_REAL_SGL:
+        case CT_INT_SGL: newExpr->expr_typetag = TYFLOAT; break;
+        case CT_CHAR_INT: newExpr->expr_typetag = TYSIGNEDLONGINT; break;
         default: error("Unknown cast tag encountered, %d", t); break;
     }
     
     newExpr->right = right;
     newExpr->u.cast_tag = t;
     
-    if (debug == 1) { msg("new_expr_cast: CASTTAG %d", t); ty_print_typetag(right->expr_type); msg(""); }
+    if (debug == 1) { msg("new_expr_cast: CASTTAG %d", t); ty_print_typetag(right->expr_typetag); msg(""); }
     
     return newExpr;
 }
@@ -460,18 +519,26 @@ EXPR_LIST append_to_expr_list(EXPR_LIST list, EXPR newItem)
 	//allocate new EXPR_LIST
 	EXPR_LIST newList = (EXPR_LIST) malloc(sizeof(expr_list_node));
 
-	//put newList at the head of list and assign the expression
-	newList->next = list;
+    EXPR_LIST listRef = list;
+    
+    while (listRef->next)
+    {
+        listRef = listRef->next;
+    }
+
+	//put newList at the tail of list and assign the expression
+	listRef->next = newList;
+    newList->next = NULL;
 	newList->base = newItem;
 	if (debug == 1) msg("append_to_expr_list");
 
-	return newList;
+	return list;
 }
 
 int require_type_conversion(EXPR left, EXPR right, int precedence, TYPETAG *required)
 {
-    TYPETAG typeLeft = left->expr_type;
-    TYPETAG typeRight = right->expr_type;
+    TYPETAG typeLeft = left->expr_typetag;
+    TYPETAG typeRight = right->expr_typetag;
     
     if (debug)
     {
@@ -577,7 +644,7 @@ EXPR parse_expr_for_case(EXPR expr)
 		result = new_expr_cast(CT_LDEREF, result);
 	}
 	
-	if(expr->expr_type == TYUNSIGNEDCHAR)
+	if(expr->expr_typetag == TYUNSIGNEDCHAR)
 	{
 		result = new_expr_cast(CT_CHAR_INT, result);
 	} 

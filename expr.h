@@ -32,12 +32,19 @@
  *     E_SIGN       - A unary sign statement (i.e. unary + or -).
  *     E_INTCONST   - An Integer constant.
  *     E_REALCONST  - A Real or Single constant.
+ *     E_CHARCONST  - A Character constant.
+ *     E_BOOLCONST  - A Boolean constant.
+ *     E_PTR        - A pointer.
  *     E_COMPR      - A comparison expression (involving >, <, =, <>, <=, >=).
  *     E_UNFUNC     - A unary function (ord, chr, succ, pred).
  *     E_VAR        - A [global] variable. TODO: update for 100% level.
+ *     E_FUNC       - A function call.
+ *     E_ARRAY      - An array.
  *     E_CAST       - Inserted to cast types prior to operation.
  */
-typedef enum {E_ASSIGN, E_ARITH, E_SIGN, E_INTCONST, E_REALCONST, E_CHARCONST, E_BOOLCONST, E_COMPR, E_UNFUNC, E_VAR, E_FUNC, E_CAST} EXPRTAG; 
+typedef enum {E_ASSIGN, E_ARITH, E_SIGN, E_COMPR, E_UNFUNC, 
+              E_INTCONST, E_REALCONST, E_CHARCONST, E_BOOLCONST, E_PTR,
+              E_VAR, E_FUNC, E_ARRAY, E_CAST} EXPRTAG; 
 
 /* typedef enum ARITHTAG
  *
@@ -101,7 +108,8 @@ struct expr_list;
 typedef struct expression
 {
   EXPRTAG expr_tag;  /* What sort of expr it is. */
-  TYPETAG expr_type; /* The expr's value type. */
+  TYPETAG expr_typetag; /* The expr's value typetag. */
+  TYPE    expr_fulltype;
   struct  expression *left;  /* Left child */
   struct  expression *right; /* Right child and the branch for unary ops.*/
   
@@ -121,7 +129,8 @@ typedef struct expression
   	struct {
   	  ST_ID var_id;
   	  struct expr_list *arguments;
-  	} var_func;
+  	  BOOLEAN array_base_function;
+  	} var_func_array;
   	
   } u;
 } expression, *EXPR;
@@ -164,6 +173,8 @@ EXPR new_expr_unfunc(UNFUNCTAG t, EXPR_LIST right);
 EXPR new_expr_identifier(ST_ID id);
 
 EXPR new_expr_var_funccall(EXPR base, EXPR_LIST arguments);
+
+EXPR new_expr_array(EXPR base, EXPR_LIST indices);
 
 /* Create a new list of expression nodes */
 EXPR_LIST new_expr_list(EXPR item);
