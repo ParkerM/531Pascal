@@ -136,17 +136,4 @@ typedef struct
 } control_labels;
 
 typedef enum { FOR_TO, FOR_DOWNTO } FOR_DIRECTION;
-
-typedef struct
-{
-   EXPR_LIST case_constants;
-   EXPR case_statement;
-} case_member, *CASE;
-
-typedef struct case_list
-{
-   CASE case_node;
-   case_list *next;
-} case_list, *CASE_LIST
-
 #endif
