@@ -658,7 +658,7 @@ double get_expr_constant(EXPR expr)
 		
 		default:
 		{	
-			bug("Cannot evaluate expression type at compile time: %d", expr->expr_tag);
+			bug("Cannot evaluate expression at compile time: %d", expr->expr_tag);
 			return 0;
 		}
 		break;

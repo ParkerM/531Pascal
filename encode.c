@@ -313,6 +313,9 @@ void encode_cast_expr(EXPR expr)
     case CT_INT_SGL:
       b_convert(TYSIGNEDLONGINT, TYFLOAT);
       break;
+    case CT_CHAR_INT:
+    	b_convert(TYUNSIGNEDCHAR, TYSIGNEDLONGINT);
+	    break;
     case CT_LDEREF:
       b_deref(expr->expr_type);
       break;

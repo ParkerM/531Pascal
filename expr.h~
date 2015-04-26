@@ -94,7 +94,7 @@ typedef enum {UF_ORD, UF_CHR, UF_SUCC, UF_PRED} UNFUNCTAG;
  *     CT_INT_REAL  - Converts an Integer to a Real.
  *     CT_LVAL_RVAL - Derefs an l-value into an r-value.
  */
-typedef enum {CT_SGL_REAL, CT_REAL_SGL, CT_INT_REAL, CT_INT_SGL, CT_LDEREF, CT_CHAR_INT} CASTTAG;
+typedef enum {CT_SGL_REAL, CT_REAL_SGL, CT_INT_REAL, CT_INT_SGL, CT_LDEREF} CASTTAG;
 
 struct expr_list;
 

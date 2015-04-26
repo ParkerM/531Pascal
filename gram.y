@@ -87,9 +87,8 @@ void yyerror(char *);
     DIR_LIST        y_dir_list;
     PARAM_LIST 	  y_param_list;
     
+    BOOLEAN			  y_boolean;
     control_labels  y_control;
-    CASE            y_case;
-    CASE_LIST       y_case_list;
     FOR_DIRECTION   y_for_dir;
     
     num_const_p     y_num_const;
@@ -188,9 +187,8 @@ void yyerror(char *);
 %type <y_string> simple_if
 %type <y_for_dir> for_direction
 
-%type <y_case>       
-%type <y_case_list>  
-
+%type <y_boolean> optional_semicolon_or_else_branch
+%type <y_string> case_element
 %type <y_expr> constant number unsigned_number constant_literal string predefined_literal
 
 %type <y_expr_list> index_expression_list actual_parameter_list optional_par_actual_parameter_list
@@ -560,13 +558,13 @@ variant:
   ;
 
 case_constant_list:
-    one_case_constant
-  | case_constant_list ',' one_case_constant
+    one_case_constant { $$ = new_expr_list($1); }
+  | case_constant_list ',' one_case_constant { $$ = append_to_expr_list($1, $3); }
   ;
 
 one_case_constant:
     static_expression
-  | static_expression LEX_RANGE static_expression
+  | static_expression LEX_RANGE static_expression {}
   ;
 
 /* variable declaration part */
@@ -675,13 +673,13 @@ statement:
 
 structured_statement:
     compound_statement
-  | with_statement
+  | with_statement {}
   | conditional_statement
   | repetitive_statement
   ;
 
 with_statement:
-    LEX_WITH structured_variable_list LEX_DO statement
+    LEX_WITH structured_variable_list LEX_DO statement {}
   ;
 
 structured_variable_list:
@@ -731,45 +729,44 @@ if_statement:
 case_statement:
     LEX_CASE expression LEX_OF {
       char *end_label = new_symbol();
-      encode_expression($2);
+      EXPR expr = parse_expr_for_case($2);
+      encode_expression(expr);
       $<y_string>$ = end_label;      
-    } case_element_list {
-      //encode_case_elements($5, $<y_string>4);
-      CASE_LiST currentNode = $5;
-      while(currentNode != NULL)
-      {
-        char *after_case_label = new_symbol();
-        CASE currentCase = currentNode->case_node;
-        
-        EXPR_LIST case_expr_list = currentCase->case_constants;
-        while(case_expr_list != NULL)
-        {        
-            
-            encode_expression(currentCase->case_statement);
-            case_expr_list = case_expr_list->next;     
-        }
-        
-        currentCase = currentCase->next;
-      }     
-      
-    } optional_semicolon_or_else_branch LEX_END {
+    } case_element_list optional_semicolon_or_else_branch LEX_END {
+    	if($6 == FALSE)
+    	{
+      	b_pop();
+      }
       b_label($<y_string>4);
     }
   ;
 
 optional_semicolon_or_else_branch:
-    optional_semicolon
-  | case_default statement_sequence
+    optional_semicolon { $$ = FALSE; } //Pass false, no else statement
+  | case_default { b_pop(); } statement_sequence { $$ = TRUE;} //Pass true, else statement exists
   ;
 
 case_element_list:
-    case_element { $$ = create_case_list($1); }
-  | case_element_list semi case_element { $$ = append_to_case_list($1, $3); }
+    case_element { b_jump($<y_string>0); b_label($1); }
+  | case_element_list semi case_element { b_jump($<y_string>0); b_label($3); }
   ;
 
 case_element:
-    case_constant_list ':' statement {
-      $$ = make_case_node($1, $2);
+    case_constant_list {
+    	char *end_label = new_symbol();
+    	char *statement_label = new_symbol();
+    	EXPR_LIST list = $1;
+    	while(list != NULL)
+    	{
+    		EXPR expr = list->base;
+    		b_dispatch(B_EQ, TYSIGNEDLONGINT, get_expr_constant(expr), statement_label, TRUE);
+    		list = list->next;
+    	}
+    	b_jump(end_label);
+    	b_label(statement_label);
+    	$<y_string>$ = end_label;
+    } ':' statement {
+    	$$ = $<y_string>2;
     }
   ;
 
