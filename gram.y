@@ -70,7 +70,7 @@ void yyerror(char *);
 /* The union representing a semantic stack entry */
 %union {
     char *          y_string;
-    int	            y_cint;
+    int	           y_cint;
     long            y_int;
     double          y_real;
     
@@ -78,15 +78,16 @@ void yyerror(char *);
     ST_ID           y_stid;
     
     typedef_item_p  y_typedef_item;
-    TYPE_LIST	      y_type_list;
+    TYPE_LIST	     y_type_list;
     TYPE            y_type;
 
-    EXPR		      	y_expr;
-    EXPR_LIST 	  	y_expr_list;
+    EXPR		        y_expr;
+    EXPR_LIST 	     y_expr_list;
     DIRECTIVETYPE   y_dir;
     DIR_LIST        y_dir_list;
-    PARAM_LIST 	  	y_param_list;
+    PARAM_LIST 	  y_param_list;
     
+    BOOLEAN			  y_boolean;
     control_labels  y_control;
     FOR_DIRECTION   y_for_dir;
     
@@ -172,15 +173,22 @@ void yyerror(char *);
 %type <y_expr> actual_parameter assignment_or_call_statement variable_or_function_access_maybe_assignment
 %type <y_expr> rest_of_statement /*standard_procedure_statement*/ index_expression_item
 %type <y_expr> static_expression boolean_expression expression simple_expression
+
+%type <y_expr> one_case_constant
+%type <y_expr_list> case_constant_list
+
 %type <y_expr> term signed_primary primary signed_factor factor variable_or_function_access
 %type <y_expr> variable_or_function_access_no_standard_function variable_or_function_access_no_id
 %type <y_expr> standard_functions optional_par_actual_parameter
+
 %type <y_dir_list> directive_list
 %type <y_dir> directive
 
 %type <y_string> simple_if
 %type <y_for_dir> for_direction
 
+%type <y_boolean> optional_semicolon_or_else_branch
+%type <y_string> case_element
 %type <y_expr> constant number unsigned_number constant_literal string predefined_literal
 
 %type <y_expr_list> index_expression_list actual_parameter_list optional_par_actual_parameter_list
@@ -550,13 +558,13 @@ variant:
   ;
 
 case_constant_list:
-    one_case_constant
-  | case_constant_list ',' one_case_constant
+    one_case_constant { $$ = new_expr_list($1); }
+  | case_constant_list ',' one_case_constant { $$ = append_to_expr_list($1, $3); }
   ;
 
 one_case_constant:
     static_expression
-  | static_expression LEX_RANGE static_expression
+  | static_expression LEX_RANGE static_expression {}
   ;
 
 /* variable declaration part */
@@ -665,13 +673,13 @@ statement:
 
 structured_statement:
     compound_statement
-  | with_statement
+  | with_statement {}
   | conditional_statement
   | repetitive_statement
   ;
 
 with_statement:
-    LEX_WITH structured_variable_list LEX_DO statement
+    LEX_WITH structured_variable_list LEX_DO statement {}
   ;
 
 structured_variable_list:
@@ -719,21 +727,47 @@ if_statement:
   ;
 
 case_statement:
-    LEX_CASE expression LEX_OF case_element_list optional_semicolon_or_else_branch LEX_END
+    LEX_CASE expression LEX_OF {
+      char *end_label = new_symbol();
+      EXPR expr = parse_expr_for_case($2);
+      encode_expression(expr);
+      $<y_string>$ = end_label;      
+    } case_element_list optional_semicolon_or_else_branch LEX_END {
+    	if($6 == FALSE)
+    	{
+      	b_pop();
+      }
+      b_label($<y_string>4);
+    }
   ;
 
 optional_semicolon_or_else_branch:
-    optional_semicolon
-  | case_default statement_sequence
+    optional_semicolon { $$ = FALSE; } //Pass false, no else statement
+  | case_default { b_pop(); } statement_sequence { $$ = TRUE;} //Pass true, else statement exists
   ;
 
 case_element_list:
-    case_element
-  | case_element_list semi case_element
+    case_element { b_jump($<y_string>0); b_label($1); }
+  | case_element_list semi case_element { b_jump($<y_string>0); b_label($3); }
   ;
 
 case_element:
-    case_constant_list ':' statement
+    case_constant_list {
+    	char *end_label = new_symbol();
+    	char *statement_label = new_symbol();
+    	EXPR_LIST list = $1;
+    	while(list != NULL)
+    	{
+    		EXPR expr = list->base;
+    		b_dispatch(B_EQ, TYSIGNEDLONGINT, get_expr_constant(expr), statement_label, TRUE);
+    		list = list->next;
+    	}
+    	b_jump(end_label);
+    	b_label(statement_label);
+    	$<y_string>$ = end_label;
+    } ':' statement {
+    	$$ = $<y_string>2;
+    }
   ;
 
 case_default:
