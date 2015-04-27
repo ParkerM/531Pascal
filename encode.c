@@ -1,5 +1,11 @@
 #include "encode.h"
 
+// Directives that allow the type tags herein to match the Pascal types more closely.
+#define TYBOOL    TYSIGNEDCHAR
+#define TYCHAR    TYUNSIGNEDCHAR
+#define TYINTEGER TYSIGNEDLONGINT
+#define TYSINGLE  TYFLOAT
+
 void encode_arith_expr(EXPR expr);
 void encode_assn_expr(EXPR expr);
 void encode_cast_expr(EXPR expr);
@@ -87,7 +93,7 @@ int get_type_size(TYPE type)
       return 4;
     break;
     
-    case TYSIGNEDCHAR:
+    case TYBOOL:
       return 1;
     break;
 
@@ -95,15 +101,15 @@ int get_type_size(TYPE type)
       return 4;
     break;
     
-    case TYSIGNEDLONGINT:
+    case TYINTEGER:
       return 4;
     break;
     
-    case TYUNSIGNEDCHAR:
+    case TYCHAR:
       return 1;
     break;
     
-    case TYFLOAT:
+    case TYSINGLE:
       return 4;
     break;
     
@@ -145,7 +151,7 @@ int get_type_alignment(TYPE type)
       return 4;
     break;
     
-    case TYSIGNEDCHAR:
+    case TYBOOL:
       return 1;
     break;
 
@@ -153,15 +159,15 @@ int get_type_alignment(TYPE type)
       return 4;
     break;
     
-    case TYSIGNEDLONGINT:
+    case TYINTEGER:
       return 4;
     break;
     
-    case TYUNSIGNEDCHAR:
+    case TYCHAR:
       return 1;
     break;
     
-    case TYFLOAT:
+    case TYSINGLE:
       return 4;
     break;
     
@@ -199,6 +205,8 @@ void end_main()
 /* -----=====----- EXPRESSIONS -----=====----- */
 void encode_expression(EXPR expr)
 {
+  if (expr->expr_typetag == TYERROR) { return; }
+
   switch (expr->expr_tag)
   {
     case E_ASSIGN:
@@ -218,11 +226,11 @@ void encode_expression(EXPR expr)
       break;
     case E_CHARCONST:
       b_push_const_int(expr->u.character);
-      b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
+      b_convert(TYINTEGER, TYCHAR);
       break;
     case E_BOOLCONST:
       b_push_const_int(expr->u.bool);
-      b_convert(TYSIGNEDLONGINT, TYSIGNEDCHAR);
+      b_convert(TYINTEGER, TYBOOL);
       break;
     case E_COMPR:
       encode_compare_expr(expr);
@@ -265,17 +273,17 @@ void encode_arith_expr(EXPR expr)
       b_arith_rel_op(B_MULT, expr->expr_typetag);
       break;
     case AR_IDIV:
-      if (expr->expr_typetag != TYSIGNEDLONGINT)
+      if (expr->expr_typetag != TYINTEGER)
       {
         fatal("An integer division expression is not of type Integer!");
       }
       else
       {
-        b_arith_rel_op(B_DIV, TYSIGNEDLONGINT);
+        b_arith_rel_op(B_DIV, TYINTEGER);
       }
       break;
     case AR_RDIV:
-      if (expr->expr_typetag != TYDOUBLE || expr->expr_typetag != TYFLOAT)
+      if (expr->expr_typetag != TYDOUBLE || expr->expr_typetag != TYSINGLE)
       {
         fatal("A division expression is not of type Real or Single!");
       }
@@ -298,9 +306,20 @@ void encode_assn_expr(EXPR expr)
   encode_expression(expr->left);
   encode_expression(expr->right);
   
-  b_assign(expr->expr_typetag);
-  
-  b_pop();
+  switch (expr->expr_typetag)
+  {
+    case TYBOOL:
+    case TYCHAR:
+    case TYINTEGER:
+    case TYPTR:
+    case TYSINGLE:
+    case TYDOUBLE:
+      b_assign(expr->expr_typetag);
+      b_pop();
+      break;
+    default:
+      break;
+  }
 }
 
 void encode_cast_expr(EXPR expr)
@@ -310,22 +329,34 @@ void encode_cast_expr(EXPR expr)
   switch (expr->u.cast_tag)
   {
     case CT_SGL_REAL:
-      b_convert(TYFLOAT, TYDOUBLE);
+      b_convert(TYSINGLE, TYDOUBLE);
       break;
     case CT_REAL_SGL:
-      b_convert(TYDOUBLE, TYFLOAT);
+      b_convert(TYDOUBLE, TYSINGLE);
       break;
     case CT_INT_REAL:
-      b_convert(TYSIGNEDLONGINT, TYDOUBLE);
+      b_convert(TYINTEGER, TYDOUBLE);
       break;
     case CT_INT_SGL:
-      b_convert(TYSIGNEDLONGINT, TYFLOAT);
+      b_convert(TYINTEGER, TYSINGLE);
       break;
     case CT_CHAR_INT:
-    	b_convert(TYUNSIGNEDCHAR, TYSIGNEDLONGINT);
+    	b_convert(TYCHAR, TYINTEGER);
 	    break;
     case CT_LDEREF:
-      b_deref(expr->expr_typetag);
+      switch (expr->expr_typetag)
+      {
+        case TYBOOL:
+        case TYCHAR:
+        case TYINTEGER:
+        case TYPTR:
+        case TYSINGLE:
+        case TYDOUBLE:
+          b_deref(expr->expr_typetag);
+          break;
+        default:
+          break;
+      }
       break;
     default:
       bug("Unknown CAST TAG encountered.");
@@ -335,9 +366,9 @@ void encode_cast_expr(EXPR expr)
 
 void encode_compare_expr(EXPR expr)
 {
-  if (expr->expr_typetag != TYSIGNEDCHAR)
+  if (expr->expr_typetag != TYBOOL)
   {
-    fatal("Boolean expression is not of type TYSIGNEDCHAR.");
+    fatal("Boolean expression is not a boolean type.");
   }
   
   TYPETAG argType = expr->left->expr_typetag;
@@ -345,18 +376,18 @@ void encode_compare_expr(EXPR expr)
   encode_expression(expr->left);
   
   // Convert boolean and characters to integers, since that is what arith_rel_op expects.
-  if (argType == TYUNSIGNEDCHAR || argType == TYSIGNEDCHAR)
+  if (argType == TYCHAR || argType == TYBOOL)
   {
-    b_convert(argType, TYSIGNEDLONGINT);
+    b_convert(argType, TYINTEGER);
   }
   
   encode_expression(expr->right);
   
   // Convert boolean and characters to integers, since that is what arith_rel_op expects.
-  if (argType == TYUNSIGNEDCHAR || argType == TYSIGNEDCHAR)
+  if (argType == TYCHAR || argType == TYBOOL)
   {
-    b_convert(argType, TYSIGNEDLONGINT);
-    argType = TYSIGNEDLONGINT;
+    b_convert(argType, TYINTEGER);
+    argType = TYINTEGER;
   }
   
   switch (expr->u.compr_tag)
@@ -384,7 +415,7 @@ void encode_compare_expr(EXPR expr)
       break;
   }
   
-  b_convert(TYSIGNEDLONGINT, TYSIGNEDCHAR);
+  b_convert(TYINTEGER, TYBOOL);
 }
 
 void encode_signed_expr(EXPR expr)
@@ -416,9 +447,9 @@ void encode_unary_func_expr(EXPR expr)
         b_deref(expr->right->expr_typetag);
       }
       
-      if (expr->right->expr_typetag != TYSIGNEDLONGINT)
+      if (expr->right->expr_typetag != TYINTEGER)
       {
-        b_convert(expr->right->expr_typetag, TYSIGNEDLONGINT);
+        b_convert(expr->right->expr_typetag, TYINTEGER);
       }
       break;
     case UF_CHR:
@@ -429,7 +460,7 @@ void encode_unary_func_expr(EXPR expr)
         b_deref(expr->right->expr_typetag);
       }
       
-      b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
+      b_convert(TYINTEGER, TYCHAR);
       break;
     case UF_SUCC:
       encode_successor_func(expr->right);
@@ -478,6 +509,7 @@ void encode_array(EXPR expr)
 {
     EXPR_LIST indexExprs = expr->u.var_func_array.arguments;
 
+    // First, encode the base address of the array, and retrieve its indexing information.
     encode_expression(expr->right);
     
     INDEX_LIST index_list;
@@ -486,6 +518,15 @@ void encode_array(EXPR expr)
     long low, high;
     ty_query_subrange(index_list->type, &low, &high);
     
+    // If the index expression is not an integer, complain.
+    if (indexExprs->base->expr_typetag != TYINTEGER)
+    {
+        error("Incompatible index type in array access");
+        return;
+    }
+    
+    // Otherwise, encode the index expression and compute the offset from the base, according
+    // to the lower limit of the index's subrange of possible index values.
     encode_expression(indexExprs->base);
     
     if (indexExprs->base->expr_tag == E_VAR || indexExprs->base->expr_tag == E_ARRAY)
@@ -495,9 +536,9 @@ void encode_array(EXPR expr)
     
     b_push_const_int((int)low);
     
-    b_arith_rel_op(B_SUB, TYSIGNEDLONGINT);
+    b_arith_rel_op(B_SUB, TYINTEGER);
     
-    b_ptr_arith_op(B_ADD, TYSIGNEDLONGINT, get_type_size(expr->expr_fulltype));
+    b_ptr_arith_op(B_ADD, TYINTEGER, get_type_size(expr->expr_fulltype));
 }
 
 void encode_successor_func(EXPR child_expr)
@@ -508,17 +549,17 @@ void encode_successor_func(EXPR child_expr)
     case E_UNFUNC:
       {
         encode_expression(child_expr);
-        if (child_expr->expr_typetag == TYUNSIGNEDCHAR)
+        if (child_expr->expr_typetag == TYCHAR)
         {
-          b_convert(TYUNSIGNEDCHAR, TYSIGNEDLONGINT);
+          b_convert(TYCHAR, TYINTEGER);
           b_push_const_int(1);
-          b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
-          b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
+          b_arith_rel_op(B_ADD, TYINTEGER);
+          b_convert(TYINTEGER, TYCHAR);
         }
         else
         {
           b_push_const_int(1);
-          b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
+          b_arith_rel_op(B_ADD, TYINTEGER);
         }
       }
       break;
@@ -526,27 +567,27 @@ void encode_successor_func(EXPR child_expr)
       {
         encode_expression(child_expr);
         b_deref(child_expr->expr_typetag);
-        if (child_expr->expr_typetag == TYUNSIGNEDCHAR)
+        if (child_expr->expr_typetag == TYCHAR)
         {
-          b_convert(TYUNSIGNEDCHAR, TYSIGNEDLONGINT);
+          b_convert(TYCHAR, TYINTEGER);
           b_push_const_int(1);
-          b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
-          b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
+          b_arith_rel_op(B_ADD, TYINTEGER);
+          b_convert(TYINTEGER, TYCHAR);
         }
         else
         {
           b_push_const_int(1);
-          b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
+          b_arith_rel_op(B_ADD, TYINTEGER);
         }
       }
       break;
     case E_CHARCONST:
       {
         encode_expression(child_expr);
-        b_convert(TYUNSIGNEDCHAR, TYSIGNEDLONGINT);
+        b_convert(TYCHAR, TYINTEGER);
         b_push_const_int(1);
-        b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
-        b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
+        b_arith_rel_op(B_ADD, TYINTEGER);
+        b_convert(TYINTEGER, TYCHAR);
       }
       break;
     case E_INTCONST:
@@ -567,17 +608,17 @@ void encode_predecessor_func(EXPR child_expr)
     case E_UNFUNC:
       {
         encode_expression(child_expr);
-        if (child_expr->expr_typetag == TYUNSIGNEDCHAR)
+        if (child_expr->expr_typetag == TYCHAR)
         {
-          b_convert(TYUNSIGNEDCHAR, TYSIGNEDLONGINT);
+          b_convert(TYCHAR, TYINTEGER);
           b_push_const_int(-1);
-          b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
-          b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
+          b_arith_rel_op(B_ADD, TYINTEGER);
+          b_convert(TYINTEGER, TYCHAR);
         }
         else
         {
           b_push_const_int(-1);
-          b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
+          b_arith_rel_op(B_ADD, TYINTEGER);
         }
       }
       break;
@@ -585,27 +626,27 @@ void encode_predecessor_func(EXPR child_expr)
       {
         encode_expression(child_expr);
         b_deref(child_expr->expr_typetag);
-        if (child_expr->expr_typetag == TYUNSIGNEDCHAR)
+        if (child_expr->expr_typetag == TYCHAR)
         {
-          b_convert(TYUNSIGNEDCHAR, TYSIGNEDLONGINT);
+          b_convert(TYCHAR, TYINTEGER);
           b_push_const_int(-1);
-          b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
-          b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
+          b_arith_rel_op(B_ADD, TYINTEGER);
+          b_convert(TYINTEGER, TYCHAR);
         }
         else
         {
           b_push_const_int(-1);
-          b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
+          b_arith_rel_op(B_ADD, TYINTEGER);
         }
       }
       break;
     case E_CHARCONST:
       {
         encode_expression(child_expr);
-        b_convert(TYUNSIGNEDCHAR, TYSIGNEDLONGINT);
+        b_convert(TYCHAR, TYINTEGER);
         b_push_const_int(-1);
-        b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
-        b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
+        b_arith_rel_op(B_ADD, TYINTEGER);
+        b_convert(TYINTEGER, TYCHAR);
       }
       break;
     case E_INTCONST:

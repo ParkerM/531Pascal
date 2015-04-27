@@ -52,7 +52,7 @@ EXPR new_expr_assign(EXPR left, EXPR right)
     
     if (compatible == COMPLETELY_INCOMPATIBLE)
     {
-        error("Illegal conversion between types.");
+        error("Illegal conversion");
         //ty_print_typetag(left->expr_typetag); msg("");
         //ty_print_typetag(modifiedRight->expr_typetag); msg("");
     }
@@ -109,7 +109,7 @@ EXPR new_expr_arith(EXPR left, ARITHTAG t, EXPR right)
     
     if (compatible == COMPLETELY_INCOMPATIBLE)
     {
-        error("Illegal conversion between types.");
+        error("Illegal conversion");
         //ty_print_typetag(modifiedLeft->expr_typetag); msg("");
         //ty_print_typetag(modifiedRight->expr_typetag); msg("");
     }
@@ -246,7 +246,7 @@ EXPR new_expr_compr(EXPR left, COMPRTAG t, EXPR right)
     
     if (compatible == COMPLETELY_INCOMPATIBLE)
     {
-        error("Illegal conversion between types.");
+        error("Illegal conversion");
         //ty_print_typetag(modifiedLeft->expr_typetag); error("");
         //ty_print_typetag(modifiedRight->expr_typetag); error("");
     }
@@ -426,11 +426,20 @@ EXPR new_expr_array(EXPR base, EXPR_LIST indices)
   
   newExpr->expr_tag = E_ARRAY;
   
-  INDEX_LIST index_list;
-  newExpr->expr_fulltype = ty_query_array(base->expr_fulltype, &index_list);
-  newExpr->expr_typetag = ty_query(newExpr->expr_fulltype);
-  newExpr->right = base;
+  if (base->expr_typetag == TYARRAY)
+  {
+    INDEX_LIST index_list;
+    newExpr->expr_fulltype = ty_query_array(base->expr_fulltype, &index_list);
+    newExpr->expr_typetag = ty_query(newExpr->expr_fulltype);
+  }
+  else
+  {
+    error("Nonarray in array access expression");
+    newExpr->expr_fulltype = ty_build_basic(TYERROR);
+    newExpr->expr_typetag = TYERROR;
+  }
   
+  newExpr->right = base;
   newExpr->u.var_func_array.arguments = indices;
 }
 
