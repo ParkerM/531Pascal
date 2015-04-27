@@ -16,6 +16,8 @@ void encode_predecessor_func(EXPR expr);
 int get_idx_list_size(INDEX_LIST list);
 int get_expr_list_size(EXPR_LIST list);
 
+char last_loop_label[32];
+
 void encode(ST_ID id)
 {
   int blockNum = 0;
@@ -120,7 +122,7 @@ int get_type_size(TYPE type)
     
     default:
       msg("TYPETAG may have undefined size: ");
-      ty_print_typetag(query);
+      //ty_print_typetag(query);
       return 0;
     break;
   }
@@ -178,7 +180,7 @@ int get_type_alignment(TYPE type)
     
     default:
       msg("TYPETAG may have undefined alignment: ");
-      ty_print_typetag(query);
+      //ty_print_typetag(query);
       return 0;
     break;
   }
@@ -689,4 +691,12 @@ int get_expr_list_size(EXPR_LIST list)
   }
   
   return size;
+}
+
+void store_label(char* label) {
+  strcpy(last_loop_label, label);
+}
+
+char *get_last_label() {
+  return last_loop_label;
 }

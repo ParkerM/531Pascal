@@ -729,6 +729,7 @@ if_statement:
 case_statement:
     LEX_CASE expression LEX_OF {
       char *end_label = new_symbol();
+      store_label(end_label);
       EXPR expr = parse_expr_for_case($2);
       encode_expression(expr);
       $<y_string>$ = end_label;      
@@ -754,6 +755,7 @@ case_element_list:
 case_element:
     case_constant_list {
     	char *end_label = new_symbol();
+      store_label(end_label);
     	char *statement_label = new_symbol();
     	EXPR_LIST list = $1;
     	while(list != NULL)
@@ -790,10 +792,11 @@ while_statement:
     {
         char *while_cond_label = new_symbol();
         char *while_after_label = new_symbol();
+        store_label(while_cond_label);
         
-        b_label(while_cond_label);
+        b_label(while_after_label);
         encode_expression($2);
-        b_cond_jump(TYSIGNEDCHAR, B_ZERO, while_after_label);
+        b_cond_jump(TYSIGNEDCHAR, B_ZERO, while_cond_label);
         
         control_labels lbls = {while_cond_label, while_after_label};
         $<y_control>$ = lbls;
@@ -801,8 +804,8 @@ while_statement:
     statement
     {
         control_labels lbls = $<y_control>4;
-        b_jump(lbls.conditional_label);
-        b_label(lbls.after_label);
+        b_jump(lbls.after_label);
+        b_label(lbls.conditional_label);
     }
   ;
 
@@ -811,6 +814,7 @@ for_statement:
     {
         char *for_cond_label = new_symbol();
         char *for_exit_label = new_symbol();
+        store_label(for_exit_label);
         
         encode_expression($6);
         if ($6->expr_tag == E_VAR) { b_deref($6->expr_typetag); }
@@ -980,7 +984,7 @@ return_statement:
   ;
 
 break_statement:
-    BREAK
+    BREAK   { char *last_loop_label = get_last_label(); b_jump(last_loop_label); }
   ;
 
 continue_statement:

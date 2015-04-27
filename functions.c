@@ -165,7 +165,7 @@ void enter_function_block(typedef_item_p funcDef)
    while(param != NULL)
    {
    	message(st_get_id_str(param->id));
-   	ty_print_typetag(ty_query(param->type));
+   	//ty_print_typetag(ty_query(param->type));
       ST_DR rec = stdr_alloc();
       rec->tag = PDECL;
       rec->u.decl.type = param->type;
@@ -204,7 +204,7 @@ void encode_function_def(typedef_item_p funcDef)
    while(param != NULL)
    {
    	message(st_get_id_str(param->id));
-   	ty_print_typetag(ty_query(param->type));
+   	//ty_print_typetag(ty_query(param->type));
    	
    	int offset = b_store_formal_param(ty_query(param->type));
    	int block;
