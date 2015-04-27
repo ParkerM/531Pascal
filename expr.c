@@ -53,8 +53,8 @@ EXPR new_expr_assign(EXPR left, EXPR right)
     if (compatible == COMPLETELY_INCOMPATIBLE)
     {
         error("Illegal conversion between types.");
-        ty_print_typetag(left->expr_typetag); msg("");
-        ty_print_typetag(modifiedRight->expr_typetag); msg("");
+        //ty_print_typetag(left->expr_typetag); msg("");
+        //ty_print_typetag(modifiedRight->expr_typetag); msg("");
     }
     else if (compatible == CONVERSION_REQUIRED)
     {
@@ -110,8 +110,8 @@ EXPR new_expr_arith(EXPR left, ARITHTAG t, EXPR right)
     if (compatible == COMPLETELY_INCOMPATIBLE)
     {
         error("Illegal conversion between types.");
-        ty_print_typetag(modifiedLeft->expr_typetag); msg("");
-        ty_print_typetag(modifiedRight->expr_typetag); msg("");
+        //ty_print_typetag(modifiedLeft->expr_typetag); msg("");
+        //ty_print_typetag(modifiedRight->expr_typetag); msg("");
     }
     else if (compatible == CONVERSION_REQUIRED)
     {
@@ -247,8 +247,8 @@ EXPR new_expr_compr(EXPR left, COMPRTAG t, EXPR right)
     if (compatible == COMPLETELY_INCOMPATIBLE)
     {
         error("Illegal conversion between types.");
-        ty_print_typetag(modifiedLeft->expr_typetag); error("");
-        ty_print_typetag(modifiedRight->expr_typetag); error("");
+        //ty_print_typetag(modifiedLeft->expr_typetag); error("");
+        //ty_print_typetag(modifiedRight->expr_typetag); error("");
     }
     else if (compatible == CONVERSION_REQUIRED)
     {
@@ -309,7 +309,7 @@ EXPR new_expr_unfunc(UNFUNCTAG t, EXPR_LIST rightList)
             break;
     }
 
-    if (!typeOK) { error("Invalid type for function."); ty_print_typetag(rightExprType);}
+    if (!typeOK) error("Invalid type for function."); //ty_print_typetag(rightExprType);}
 
 	//allocate new EXPR
 	EXPR newExpr = (EXPR) malloc(sizeof(expression));
@@ -496,7 +496,7 @@ EXPR new_expr_cast(CASTTAG t, EXPR right)
     newExpr->right = right;
     newExpr->u.cast_tag = t;
     
-    if (debug == 1) { msg("new_expr_cast: CASTTAG %d", t); ty_print_typetag(right->expr_typetag); msg(""); }
+    if (debug == 1) msg("new_expr_cast: CASTTAG %d", t); //ty_print_typetag(right->expr_typetag); msg(""); }
     
     return newExpr;
 }
@@ -519,20 +519,21 @@ EXPR_LIST append_to_expr_list(EXPR_LIST list, EXPR newItem)
 	//allocate new EXPR_LIST
 	EXPR_LIST newList = (EXPR_LIST) malloc(sizeof(expr_list_node));
 
-    EXPR_LIST listRef = list;
+    // EXPR_LIST listRef = list;
     
-    while (listRef->next)
-    {
-        listRef = listRef->next;
-    }
+    // while (listRef->next)
+    // {
+    //     listRef = listRef->next;
+    // }
 
 	//put newList at the tail of list and assign the expression
-	listRef->next = newList;
-    newList->next = NULL;
-	newList->base = newItem;
+    newList->next = list;
+    newList->base = newItem;
+	//listRef->next = newList;
+
 	if (debug == 1) msg("append_to_expr_list");
 
-	return list;
+	return newList;
 }
 
 int require_type_conversion(EXPR left, EXPR right, int precedence, TYPETAG *required)
@@ -543,8 +544,8 @@ int require_type_conversion(EXPR left, EXPR right, int precedence, TYPETAG *requ
     if (debug)
     {
       msg("require_type_conversion(%d, %d, %d, *)", typeLeft, typeRight, precedence);
-      ty_print_typetag(typeLeft); msg("");
-      ty_print_typetag(typeRight); msg("");
+      //ty_print_typetag(typeLeft); msg("");
+      //ty_print_typetag(typeRight); msg("");
     }
         
     if (typeLeft == typeRight) { *required = typeLeft; return COMPLETELY_COMPATIBLE; }
@@ -630,7 +631,7 @@ CASTTAG get_cast_constant(TYPETAG from, TYPETAG to)
   else
   {
     error("From not recognized ");
-    ty_print_typetag(from); msg(" is what is found.");
+    //ty_print_typetag(from); msg(" is what is found.");
   }
   return 0;
   
