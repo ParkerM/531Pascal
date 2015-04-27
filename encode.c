@@ -275,7 +275,7 @@ void encode_arith_expr(EXPR expr)
     case AR_IDIV:
       if (expr->expr_typetag != TYINTEGER)
       {
-        fatal("An integer division expression is not of type Integer!");
+        error("An integer division expression is not of type Integer!");
       }
       else
       {
@@ -285,7 +285,7 @@ void encode_arith_expr(EXPR expr)
     case AR_RDIV:
       if (expr->expr_typetag != TYDOUBLE || expr->expr_typetag != TYSINGLE)
       {
-        fatal("A division expression is not of type Real or Single!");
+        error("A division expression is not of type Real or Single!");
       }
       else
       {
@@ -508,37 +508,94 @@ void encode_function_call(EXPR expr)
 void encode_array(EXPR expr)
 {
     EXPR_LIST indexExprs = expr->u.var_func_array.arguments;
+    TYPE this_array_elem_type = expr->expr_fulltype;
 
-    // First, encode the base address of the array, and retrieve its indexing information.
+    // First, encode the first indices of the array, and retrieve its indexing information.
     encode_expression(expr->right);
     
     INDEX_LIST index_list;
     ty_query_array(expr->right->expr_fulltype, &index_list);
     
-    long low, high;
-    ty_query_subrange(index_list->type, &low, &high);
+    // Create and copy over working lists to avoid irreversably altering the originals.
+    INDEX_LIST working_index_list = (INDEX_LIST) malloc(sizeof(INDEX));
+    EXPR_LIST working_expr_list = (EXPR_LIST) malloc(sizeof(expr_list_node));
     
-    // If the index expression is not an integer, complain.
-    if (indexExprs->base->expr_typetag != TYINTEGER)
+    memcpy(working_index_list, index_list, sizeof(INDEX));
+    memcpy(working_expr_list, indexExprs, sizeof(expr_list_node));
+    
+    // Compute the sizes, which are used for error checking and creating arrays
+    // to store bounds, element sizes, and expressions.
+    int idx_size = get_idx_list_size(working_index_list);
+    int expr_size = get_expr_list_size(working_expr_list);
+    
+    if (idx_size != expr_size)
     {
-        error("Incompatible index type in array access");
-        return;
+      error("Expected %d indices; received %d", idx_size, expr_size);
+      return;
     }
     
-    // Otherwise, encode the index expression and compute the offset from the base, according
-    // to the lower limit of the index's subrange of possible index values.
-    encode_expression(indexExprs->base);
+    int lower_bounds[idx_size];
+    int number_elems[idx_size];
+    EXPR exprs[idx_size];
     
-    if (indexExprs->base->expr_tag == E_VAR || indexExprs->base->expr_tag == E_ARRAY)
+    int loop_index;
+    
+    INDEX_LIST current_item = working_index_list;
+    EXPR_LIST current_expr = working_expr_list;
+    
+    int size = get_type_size(this_array_elem_type);
+    
+    for (loop_index = 0; loop_index < idx_size; loop_index++)
     {
-      b_deref(indexExprs->base->expr_typetag);
+      long low, high;
+      ty_query_subrange(current_item->type, &low, &high);
+      
+      lower_bounds[loop_index] = (int)low;
+      
+      number_elems[loop_index] = (int)(high - low) + 1;
+      
+      exprs[idx_size - 1 - loop_index] = current_expr->base;
+      
+      current_item = current_item->next;
+      current_expr = current_expr->next;
     }
     
-    b_push_const_int((int)low);
+    int sizes[idx_size];
     
-    b_arith_rel_op(B_SUB, TYINTEGER);
+    for (loop_index = idx_size - 1; loop_index >= 0; loop_index--)
+    {
+      sizes[loop_index] = size;
+      size *= number_elems[loop_index];
+    }
     
-    b_ptr_arith_op(B_ADD, TYINTEGER, get_type_size(expr->expr_fulltype));
+    for (loop_index = 0; loop_index < idx_size; loop_index++)
+    {
+      EXPR the_expr = exprs[loop_index];
+      // If the index expression is not an integer, complain.
+      if (the_expr->expr_typetag != TYINTEGER)
+      {
+          error("Incompatible index type in array access");
+          break;
+      }
+      
+      // Otherwise, encode the index expression and compute the offset from the base, according
+      // to the lower limit of the index's subrange of possible index values.
+      encode_expression(the_expr);
+      
+      if (the_expr->expr_tag == E_VAR || the_expr->expr_tag == E_ARRAY)
+      {
+        b_deref(the_expr->expr_typetag);
+      }
+      
+      // Compute the offset from the starting index of the current dimension
+      b_push_const_int(lower_bounds[loop_index]);
+      
+      b_arith_rel_op(B_SUB, TYINTEGER);
+      
+      b_ptr_arith_op(B_ADD, TYINTEGER, sizes[loop_index]);
+    }
+    
+    
 }
 
 void encode_successor_func(EXPR child_expr)
