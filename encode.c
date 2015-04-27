@@ -476,99 +476,52 @@ void encode_function_call(EXPR expr)
 
 void encode_array(EXPR expr)
 {
-    TYPE arrayType = expr->expr_fulltype;
-    INDEX_LIST allIndices;
     EXPR_LIST indexExprs = expr->u.var_func_array.arguments;
 
-    if (expr->u.var_func_array.array_base_function)
-    {
-        encode_function_call(expr->right);
-    }
-    else
-    {
-        char *array_var = st_get_id_str(expr->u.var_func_array.var_id);
-        b_push_ext_addr(array_var);
-    }
+    encode_expression(expr->right);
     
-    INDEX_LIST copyOfIndices;
-    TYPE arrayElemType = ty_query_array(arrayType, &allIndices);
-
-    while (ty_query(arrayElemType) == TYARRAY)
+    INDEX_LIST index_list;
+    ty_query_array(expr->right->expr_fulltype, &index_list);
+    
+    long low, high;
+    ty_query_subrange(index_list->type, &low, &high);
+    
+    encode_expression(indexExprs->base);
+    
+    if (indexExprs->base->expr_tag == E_VAR || indexExprs->base->expr_tag == E_ARRAY)
     {
-        INDEX_LIST moreIndices;
-        arrayElemType = ty_query_array(arrayElemType, &moreIndices);
-        INDEX_LIST currentIndex = allIndices;
-
-        while(currentIndex->next)
-        {
-            currentIndex = currentIndex->next;
-            if (currentIndex == moreIndices)
-            {
-                break;
-            }
-        }
-
-        if (currentIndex != moreIndices)
-        {
-            currentIndex->next = moreIndices;
-        }
-    }
-
-    int idx_size = get_idx_list_size(allIndices);
-    int expr_size = get_expr_list_size(indexExprs);
-
-    if (idx_size != expr_size)
-    {
-        error("Indices do not match array dimensions. Expected %d %s but %d %s given.", idx_size, (idx_size == 1) ? "index" : "indices", expr_size, (expr_size == 1) ? "was" : "were");
-        return;
+      b_deref(indexExprs->base->expr_typetag);
     }
     
-    int  numberElements[idx_size], lowBounds[idx_size];
-    EXPR expressions[idx_size];
+    b_push_const_int((int)low);
     
-    int idx = 0;
+    b_arith_rel_op(B_SUB, TYSIGNEDLONGINT);
     
-    INDEX_LIST indices = allIndices;
-    EXPR_LIST exprs = indexExprs;
-    
-    while (indices)
-    {
-        long low, high;
-        ty_query_subrange(indices->type, &low, &high);
-        
-        numberElements[idx] = (int)(high-low);
-        lowBounds[idx] = (int)low;
-        expressions[idx] = exprs->base;
-        
-        idx++;
-        indices = indices->next;
-        exprs = exprs->next;
-    }
-    
-    int arrayElemSize = get_type_size(arrayElemType);
-    int sizeOfLower = arrayElemSize;
-    
-    b_push_const_int(0);
-    
-    for (idx = idx_size-1; idx >= 0; idx--)
-    {
-        encode_expression(expressions[idx]);
-        b_push_const_int(lowBounds[idx]);
-        b_arith_rel_op(B_SUB, TYSIGNEDLONGINT);
-        b_push_const_int(sizeOfLower);
-        b_arith_rel_op(B_MULT, TYSIGNEDLONGINT);
-        b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
-        
-        sizeOfLower = sizeOfLower * numberElements[idx];
-    }
-    
-    b_ptr_arith_op(B_ADD, TYSIGNEDLONGINT, arrayElemSize);
+    b_ptr_arith_op(B_ADD, TYSIGNEDLONGINT, get_type_size(expr->expr_fulltype));
 }
 
 void encode_successor_func(EXPR child_expr)
 {
   switch (child_expr->expr_tag)
   {
+    case E_FUNC:
+    case E_UNFUNC:
+      {
+        encode_expression(child_expr);
+        if (child_expr->expr_typetag == TYUNSIGNEDCHAR)
+        {
+          b_convert(TYUNSIGNEDCHAR, TYSIGNEDLONGINT);
+          b_push_const_int(1);
+          b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
+          b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
+        }
+        else
+        {
+          b_push_const_int(1);
+          b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
+        }
+      }
+      break;
     case E_VAR:
       {
         encode_expression(child_expr);

@@ -1082,7 +1082,7 @@ variable_or_function_access_no_id:
   | variable_or_function_access '.' new_identifier { /* ignore */ }
   | '(' expression ')' { $$ = $2; }
   | variable_or_function_access pointer_char
-  | variable_or_function_access '[' index_expression_list ']' { new_expr_array($1, $3); }
+  | variable_or_function_access '[' index_expression_list ']' { $$ = new_expr_array($1, $3); }
   | variable_or_function_access_no_standard_function '(' actual_parameter_list ')' { $$ = new_expr_var_funccall($1, $3); }
   | p_NEW '(' variable_access_or_typename ')' { /* TODO Pointer Variable */ }
   ;

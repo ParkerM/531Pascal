@@ -362,19 +362,6 @@ EXPR new_expr_identifier(ST_ID id)
         expr_t = E_FUNC;
     }
     
-    if (var_typetag == TYARRAY)
-    {
-        INDEX_LIST indices;
-        TYPE arrayElemType = ty_query_array(var_type, &indices);
-        
-        while (ty_query(arrayElemType) == TYARRAY)
-        {
-            arrayElemType = ty_query_array(arrayElemType, &indices);
-        }
-        
-        var_typetag = ty_query(arrayElemType);
-    }
-    
     newExpr->expr_tag = expr_t;
     newExpr->expr_typetag = var_typetag;
     newExpr->expr_fulltype = var_type;
@@ -435,45 +422,16 @@ EXPR new_expr_var_funccall(EXPR base, EXPR_LIST arguments)
 
 EXPR new_expr_array(EXPR base, EXPR_LIST indices)
 {
-  // If the base expression is already an array, then append the new indices to the head of the existing ones.
-  if (base->expr_tag == E_ARRAY)
-  {
-    EXPR_LIST oldList = base->u.var_func_array.arguments;
-    
-    while (oldList->next)
-    {
-      oldList = oldList->next;
-    }
-    
-    oldList->next = indices;
-  }
-  // If the base expression is just a variable name, create a new array node.
-  else if (base->expr_tag == E_VAR)
-  {
-    base->expr_tag = E_ARRAY;
-    base->u.var_func_array.arguments = indices;
-  }
-  else if (base->expr_tag == E_FUNC)
-  {
-    EXPR arrayExpr = (EXPR) malloc(sizeof(expression));
-    
-    arrayExpr->expr_tag = E_ARRAY;
-    arrayExpr->expr_typetag = base->expr_typetag;
-    arrayExpr->expr_fulltype = ty_query_func(base->expr_fulltype, NULL, NULL);
-    arrayExpr->right = base;
-    arrayExpr->u.var_func_array.var_id = base->u.var_func_array.var_id;
-    arrayExpr->u.var_func_array.arguments = indices;
-    arrayExpr->u.var_func_array.array_base_function = TRUE;
-    
-    return arrayExpr;
-  }
-  // Any other base expression type is an error.
-  else
-  {
-    bug("Received inappropriate expression tag to new_expr_array(%d, ...)", base->expr_tag);
-  }
+  EXPR newExpr = (EXPR) malloc(sizeof(expression));
   
-  return base;
+  newExpr->expr_tag = E_ARRAY;
+  
+  INDEX_LIST index_list;
+  newExpr->expr_fulltype = ty_query_array(base->expr_fulltype, &index_list);
+  newExpr->expr_typetag = ty_query(newExpr->expr_fulltype);
+  newExpr->right = base;
+  
+  newExpr->u.var_func_array.arguments = indices;
 }
 
 EXPR new_expr_cast(CASTTAG t, EXPR right)
