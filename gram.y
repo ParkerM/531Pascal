@@ -792,11 +792,11 @@ while_statement:
     {
         char *while_cond_label = new_symbol();
         char *while_after_label = new_symbol();
-        store_label(while_after_label);
+        store_label(while_cond_label);
         
-        b_label(while_cond_label);
+        b_label(while_after_label);
         encode_expression($2);
-        b_cond_jump(TYSIGNEDCHAR, B_ZERO, while_after_label);
+        b_cond_jump(TYSIGNEDCHAR, B_ZERO, while_cond_label);
         
         control_labels lbls = {while_cond_label, while_after_label};
         $<y_control>$ = lbls;
@@ -804,8 +804,8 @@ while_statement:
     statement
     {
         control_labels lbls = $<y_control>4;
-        b_jump(lbls.conditional_label);
-        b_label(lbls.after_label);
+        b_jump(lbls.after_label);
+        b_label(lbls.conditional_label);
     }
   ;
 

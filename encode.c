@@ -16,7 +16,7 @@ void encode_predecessor_func(EXPR expr);
 int get_idx_list_size(INDEX_LIST list);
 int get_expr_list_size(EXPR_LIST list);
 
-char *last_loop_label;
+char last_loop_label[32];
 
 void encode(ST_ID id)
 {
