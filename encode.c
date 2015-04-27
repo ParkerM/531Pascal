@@ -5,6 +5,7 @@
 #define TYCHAR    TYUNSIGNEDCHAR
 #define TYINTEGER TYSIGNEDLONGINT
 #define TYSINGLE  TYFLOAT
+#define TYREAL    TYDOUBLE
 
 void encode_arith_expr(EXPR expr);
 void encode_assn_expr(EXPR expr);
@@ -22,7 +23,8 @@ void encode_predecessor_func(EXPR expr);
 int get_idx_list_size(INDEX_LIST list);
 int get_expr_list_size(EXPR_LIST list);
 
-char last_loop_label[32];
+char *labels[64];
+int currentLabel = -1;
 
 void encode(ST_ID id)
 {
@@ -113,7 +115,7 @@ int get_type_size(TYPE type)
       return 4;
     break;
     
-    case TYDOUBLE:
+    case TYREAL:
       return 8;
     break;
     
@@ -171,7 +173,7 @@ int get_type_alignment(TYPE type)
       return 4;
     break;
     
-    case TYDOUBLE:
+    case TYREAL:
       return 8;
     break;
     
@@ -283,7 +285,7 @@ void encode_arith_expr(EXPR expr)
       }
       break;
     case AR_RDIV:
-      if (expr->expr_typetag != TYDOUBLE || expr->expr_typetag != TYSINGLE)
+      if (expr->expr_typetag != TYREAL || expr->expr_typetag != TYSINGLE)
       {
         error("A division expression is not of type Real or Single!");
       }
@@ -313,7 +315,7 @@ void encode_assn_expr(EXPR expr)
     case TYINTEGER:
     case TYPTR:
     case TYSINGLE:
-    case TYDOUBLE:
+    case TYREAL:
       b_assign(expr->expr_typetag);
       b_pop();
       break;
@@ -329,13 +331,13 @@ void encode_cast_expr(EXPR expr)
   switch (expr->u.cast_tag)
   {
     case CT_SGL_REAL:
-      b_convert(TYSINGLE, TYDOUBLE);
+      b_convert(TYSINGLE, TYREAL);
       break;
     case CT_REAL_SGL:
-      b_convert(TYDOUBLE, TYSINGLE);
+      b_convert(TYREAL, TYSINGLE);
       break;
     case CT_INT_REAL:
-      b_convert(TYINTEGER, TYDOUBLE);
+      b_convert(TYINTEGER, TYREAL);
       break;
     case CT_INT_SGL:
       b_convert(TYINTEGER, TYSINGLE);
@@ -351,7 +353,7 @@ void encode_cast_expr(EXPR expr)
         case TYINTEGER:
         case TYPTR:
         case TYSINGLE:
-        case TYDOUBLE:
+        case TYREAL:
           b_deref(expr->expr_typetag);
           break;
         default:
@@ -745,9 +747,26 @@ int get_expr_list_size(EXPR_LIST list)
 }
 
 void store_label(char* label) {
-  strcpy(last_loop_label, label);
+  currentLabel++;
+  labels[currentLabel] = (char*)malloc(sizeof(label));
+  strcpy(labels[currentLabel], label);
 }
 
 char *get_last_label() {
-  return last_loop_label;
+  char *to_return;
+  
+  if (currentLabel == -1)
+  {
+    error("Break statement not inside loop");
+    to_return = (char*) malloc(8);
+    strcpy(to_return, "no_lbl");
+  }
+  else
+  {
+    to_return = (char*) malloc(sizeof(labels[currentLabel]));
+    strcpy(to_return, labels[currentLabel]);
+    currentLabel--;
+  }
+  
+  return to_return;
 }

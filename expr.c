@@ -20,6 +20,13 @@
 #define COMPLETELY_COMPATIBLE    0
 #define CONVERSION_REQUIRED      1
 
+// Directives that allow the type tags herein to match the Pascal types more closely.
+#define TYBOOL    TYSIGNEDCHAR
+#define TYCHAR    TYUNSIGNEDCHAR
+#define TYINTEGER TYSIGNEDLONGINT
+#define TYSINGLE  TYFLOAT
+#define TYREAL    TYDOUBLE
+
 /* Analyzes the two expressions to determine if a type conversion for either is required.
  * 
  * left, right -- the two expressions to compare.
@@ -58,19 +65,19 @@ EXPR new_expr_assign(EXPR left, EXPR right)
     }
     else if (compatible == CONVERSION_REQUIRED)
     {
-        if (modifiedRight->expr_typetag == TYFLOAT && required == TYDOUBLE)
+        if (modifiedRight->expr_typetag == TYSINGLE && required == TYREAL)
         {
             modifiedRight = new_expr_cast(CT_SGL_REAL, modifiedRight);
         }
-        else if (modifiedRight->expr_typetag == TYDOUBLE && required == TYFLOAT)
+        else if (modifiedRight->expr_typetag == TYREAL && required == TYSINGLE)
         {
             modifiedRight = new_expr_cast(CT_REAL_SGL, modifiedRight);
         }
-        else if (modifiedRight->expr_typetag == TYSIGNEDLONGINT && required == TYDOUBLE)
+        else if (modifiedRight->expr_typetag == TYINTEGER && required == TYREAL)
         {
             modifiedRight = new_expr_cast(CT_INT_REAL, modifiedRight);
         }
-        else if (modifiedRight->expr_typetag == TYSIGNEDLONGINT && required == TYFLOAT)
+        else if (modifiedRight->expr_typetag == TYINTEGER && required == TYSINGLE)
         {
             modifiedRight = new_expr_cast(CT_INT_SGL, modifiedRight);
         }
@@ -177,7 +184,7 @@ EXPR new_expr_intconst(long i)
 	EXPR newExpr = (EXPR) malloc(sizeof(expression));
 
 	newExpr->expr_tag = E_INTCONST;
-    newExpr->expr_typetag = TYSIGNEDLONGINT;
+    newExpr->expr_typetag = TYINTEGER;
 	newExpr->u.integer = i;
 	if (debug == 1) msg("new_expr_intconst %li", newExpr->u.integer);
 
@@ -192,7 +199,7 @@ EXPR new_expr_realconst(double d)
 	EXPR newExpr = (EXPR) malloc(sizeof(expression));
 
 	newExpr->expr_tag = E_REALCONST;
-    newExpr->expr_typetag = TYDOUBLE;
+    newExpr->expr_typetag = TYREAL;
 	newExpr->u.real = d;
 	if (debug == 1) msg("new_expr_realconst %f", newExpr->u.real);
 
@@ -205,7 +212,7 @@ EXPR new_expr_strconst(char *str)
     EXPR newExpr = (EXPR) malloc(sizeof(expression));
     
     newExpr->expr_tag = E_CHARCONST;
-    newExpr->expr_typetag = TYUNSIGNEDCHAR;
+    newExpr->expr_typetag = TYCHAR;
     newExpr->u.character = str[0];
     if (debug) msg("new_expr_strconst %s", newExpr->u.character);
     
@@ -218,7 +225,7 @@ EXPR new_expr_boolconst(int bool)
     EXPR newExpr = (EXPR) malloc(sizeof(expression));
     
     newExpr->expr_tag = E_BOOLCONST;
-    newExpr->expr_typetag = TYSIGNEDCHAR;
+    newExpr->expr_typetag = TYBOOL;
     newExpr->u.bool = bool;
     if (debug == 1) msg("new_expr_boolconst %s", (bool == 0) ? "false" : "true");
     
@@ -269,7 +276,7 @@ EXPR new_expr_compr(EXPR left, COMPRTAG t, EXPR right)
 	EXPR newExpr = (EXPR) malloc(sizeof(expression));
 
 	newExpr->expr_tag = E_COMPR;
-    newExpr->expr_typetag = TYSIGNEDCHAR;
+    newExpr->expr_typetag = TYBOOL;
 	newExpr->u.compr_tag = t;
 	newExpr->left = modifiedLeft;
 	newExpr->right = modifiedRight;
@@ -289,12 +296,12 @@ EXPR new_expr_unfunc(UNFUNCTAG t, EXPR_LIST rightList)
     switch (t)
     {
         case UF_CHR:
-            typeOK = (rightExprType == TYSIGNEDLONGINT);
-            superExprType = TYUNSIGNEDCHAR;
+            typeOK = (rightExprType == TYINTEGER);
+            superExprType = TYCHAR;
             break;
         case UF_ORD:
             typeOK = isOrdinalType(rightExprType);
-            superExprType = TYSIGNEDLONGINT;
+            superExprType = TYINTEGER;
             break;
         case UF_SUCC:
             typeOK = isOrdinalType(rightExprType);
@@ -443,6 +450,27 @@ EXPR new_expr_array(EXPR base, EXPR_LIST indices)
   newExpr->u.var_func_array.arguments = indices;
 }
 
+EXPR new_expr_subrange(EXPR low, EXPR high)
+{
+  EXPR newExpr = (EXPR) malloc(sizeof(expression));
+  newExpr->expr_tag = E_SUBRANGE;
+  
+  if (low->expr_typetag != high->expr_typetag)
+  {
+    error("Subrange values must be same type.");
+    newExpr->expr_fulltype = ty_build_basic(TYERROR);
+    newExpr->expr_typetag = TYERROR;
+    return newExpr;
+  }
+  
+  newExpr->expr_fulltype = low->expr_fulltype;
+  newExpr->expr_typetag = low->expr_typetag;
+  newExpr->left = low;
+  newExpr->right = high;
+  
+  return newExpr;
+}
+
 EXPR new_expr_cast(CASTTAG t, EXPR right)
 {
     EXPR newExpr = (EXPR) malloc(sizeof(expression));
@@ -453,10 +481,10 @@ EXPR new_expr_cast(CASTTAG t, EXPR right)
     {
         case CT_LDEREF: newExpr->expr_typetag = right->expr_typetag; break;
         case CT_SGL_REAL: 
-        case CT_INT_REAL: newExpr->expr_typetag = TYDOUBLE; break;
+        case CT_INT_REAL: newExpr->expr_typetag = TYREAL; break;
         case CT_REAL_SGL:
-        case CT_INT_SGL: newExpr->expr_typetag = TYFLOAT; break;
-        case CT_CHAR_INT: newExpr->expr_typetag = TYSIGNEDLONGINT; break;
+        case CT_INT_SGL: newExpr->expr_typetag = TYSINGLE; break;
+        case CT_CHAR_INT: newExpr->expr_typetag = TYINTEGER; break;
         default: error("Unknown cast tag encountered, %d", t); break;
     }
     
@@ -521,47 +549,47 @@ int require_type_conversion(EXPR left, EXPR right, int precedence, TYPETAG *requ
     {
         case -1: // Left precedence
             {
-                if (typeLeft == TYDOUBLE && (typeRight == TYFLOAT || typeRight == TYSIGNEDLONGINT))
+                if (typeLeft == TYREAL && (typeRight == TYSINGLE || typeRight == TYINTEGER))
                 {
-                    *required = TYDOUBLE;
+                    *required = TYREAL;
                     return CONVERSION_REQUIRED;
                 }
-                else if (typeLeft == TYFLOAT && (typeRight == TYDOUBLE || typeRight == TYSIGNEDLONGINT))
+                else if (typeLeft == TYSINGLE && (typeRight == TYREAL || typeRight == TYINTEGER))
                 {
-                    *required = TYFLOAT;
+                    *required = TYSINGLE;
                     return CONVERSION_REQUIRED;
                 }
             }
             break;
         case 1: // Right precedence
             {
-                if ((typeLeft == TYFLOAT || typeLeft == TYSIGNEDLONGINT) && typeRight == TYDOUBLE)
+                if ((typeLeft == TYSINGLE || typeLeft == TYINTEGER) && typeRight == TYREAL)
                 {
-                    *required = TYDOUBLE;
+                    *required = TYREAL;
                     return CONVERSION_REQUIRED;
                 }
-                else if ((typeLeft == TYDOUBLE || typeLeft == TYSIGNEDLONGINT) && typeRight == TYFLOAT)
+                else if ((typeLeft == TYREAL || typeLeft == TYINTEGER) && typeRight == TYSINGLE)
                 {
-                    *required = TYFLOAT;
+                    *required = TYSINGLE;
                     return CONVERSION_REQUIRED;
                 }
             }
             break;
         case 0: // No precedence
             {
-                if ((typeLeft == TYDOUBLE && typeRight == TYFLOAT) || (typeLeft == TYDOUBLE && typeRight == TYSIGNEDLONGINT))
+                if ((typeLeft == TYREAL && typeRight == TYSINGLE) || (typeLeft == TYREAL && typeRight == TYINTEGER))
                 {
-                    *required = TYDOUBLE;
+                    *required = TYREAL;
                     return CONVERSION_REQUIRED;
                 }
-                else if ((typeLeft == TYFLOAT && typeRight == TYDOUBLE) || (typeLeft == TYSIGNEDLONGINT && typeRight == TYDOUBLE))
+                else if ((typeLeft == TYSINGLE && typeRight == TYREAL) || (typeLeft == TYINTEGER && typeRight == TYREAL))
                 {
-                    *required = TYDOUBLE;
+                    *required = TYREAL;
                     return CONVERSION_REQUIRED;
                 }
-                else if ((typeLeft == TYFLOAT && typeRight == TYSIGNEDLONGINT) || (typeLeft == TYSIGNEDLONGINT && typeRight == TYFLOAT))
+                else if ((typeLeft == TYSINGLE && typeRight == TYINTEGER) || (typeLeft == TYINTEGER && typeRight == TYSINGLE))
                 {
-                    *required = TYFLOAT;
+                    *required = TYSINGLE;
                     return CONVERSION_REQUIRED;
                 }
             }
@@ -576,23 +604,23 @@ int require_type_conversion(EXPR left, EXPR right, int precedence, TYPETAG *requ
 
 CASTTAG get_cast_constant(TYPETAG from, TYPETAG to)
 {
-  if (from == TYFLOAT)
+  if (from == TYSINGLE)
   {
-    if (to == TYDOUBLE)
+    if (to == TYREAL)
     return CT_SGL_REAL;
     
   }
-  else if (from == TYDOUBLE)
+  else if (from == TYREAL)
   {
-    if (to == TYFLOAT)
+    if (to == TYSINGLE)
     return CT_REAL_SGL;
   }
-  else if (from == TYSIGNEDLONGINT)
+  else if (from == TYINTEGER)
   {
-    if (to == TYFLOAT)
+    if (to == TYSINGLE)
     return CT_INT_SGL;
     
-    if (to == TYDOUBLE)
+    if (to == TYREAL)
     return CT_INT_REAL;
   }
   else
@@ -612,7 +640,7 @@ EXPR parse_expr_for_case(EXPR expr)
 		result = new_expr_cast(CT_LDEREF, result);
 	}
 	
-	if(expr->expr_typetag == TYUNSIGNEDCHAR)
+	if(expr->expr_typetag == TYCHAR)
 	{
 		result = new_expr_cast(CT_CHAR_INT, result);
 	} 

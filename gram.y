@@ -564,7 +564,7 @@ case_constant_list:
 
 one_case_constant:
     static_expression
-  | static_expression LEX_RANGE static_expression {}
+  | static_expression LEX_RANGE static_expression { $$ = new_expr_subrange($1, $3); }
   ;
 
 /* variable declaration part */
@@ -729,7 +729,6 @@ if_statement:
 case_statement:
     LEX_CASE expression LEX_OF {
       char *end_label = new_symbol();
-      store_label(end_label);
       EXPR expr = parse_expr_for_case($2);
       encode_expression(expr);
       $<y_string>$ = end_label;      
@@ -755,13 +754,22 @@ case_element_list:
 case_element:
     case_constant_list {
     	char *end_label = new_symbol();
-      store_label(end_label);
     	char *statement_label = new_symbol();
     	EXPR_LIST list = $1;
     	while(list != NULL)
     	{
     		EXPR expr = list->base;
-    		b_dispatch(B_EQ, TYSIGNEDLONGINT, get_expr_constant(expr), statement_label, TRUE);
+    		if (expr->expr_tag == E_SUBRANGE)
+    		{
+    		  char* next_dispatch = new_symbol();
+    		  b_dispatch(B_LT, TYSIGNEDLONGINT, get_expr_constant(expr->left), next_dispatch, FALSE);
+    		  b_dispatch(B_LE, TYSIGNEDLONGINT, get_expr_constant(expr->right), statement_label, TRUE);
+    		  b_label(next_dispatch);
+    		}
+    		else
+    		{
+    		  b_dispatch(B_EQ, TYSIGNEDLONGINT, get_expr_constant(expr), statement_label, TRUE);
+    		}
     		list = list->next;
     	}
     	b_jump(end_label);
@@ -790,13 +798,13 @@ repeat_statement:
 while_statement:
     LEX_WHILE boolean_expression LEX_DO
     {
-        char *while_cond_label = new_symbol();
         char *while_after_label = new_symbol();
-        store_label(while_cond_label);
+        char *while_cond_label = new_symbol();
+        store_label(while_after_label);
         
-        b_label(while_after_label);
+        b_label(while_cond_label);
         encode_expression($2);
-        b_cond_jump(TYSIGNEDCHAR, B_ZERO, while_cond_label);
+        b_cond_jump(TYSIGNEDCHAR, B_ZERO, while_after_label);
         
         control_labels lbls = {while_cond_label, while_after_label};
         $<y_control>$ = lbls;
@@ -804,28 +812,43 @@ while_statement:
     statement
     {
         control_labels lbls = $<y_control>4;
-        b_jump(lbls.after_label);
-        b_label(lbls.conditional_label);
+        b_jump(lbls.conditional_label);
+        b_label(lbls.after_label);
     }
   ;
 
 for_statement:
     LEX_FOR variable_or_function_access LEX_ASSIGN expression for_direction expression LEX_DO
     {
-        char *for_cond_label = new_symbol();
         char *for_exit_label = new_symbol();
+        char *for_cond_label = new_symbol();
         store_label(for_exit_label);
         
+        if (!isOrdinalType($2->expr_typetag) || !isOrdinalType($4->expr_typetag) || !isOrdinalType($6->expr_typetag))
+        {
+          error("For statement requires ordinal type bounds");
+        }
+        
         encode_expression($6);
-        if ($6->expr_tag == E_VAR) { b_deref($6->expr_typetag); }
-        EXPR index_assign = new_expr_assign($2, $4);
-        encode_expression(index_assign);
+        if ($6->expr_tag == E_VAR || $6->expr_tag == E_ARRAY) { b_deref($6->expr_typetag); }
+        
+        if ($6->expr_typetag == TYUNSIGNEDCHAR || $6->expr_typetag == TYSIGNEDCHAR)
+        {
+          b_convert($6->expr_typetag, TYSIGNEDLONGINT);
+        }
+        
+        b_duplicate(TYSIGNEDLONGINT);
+        
+        encode_expression($2);
+        encode_expression($4);
+        b_assign($2->expr_typetag);
         
         b_label(for_cond_label);
         
-        b_duplicate($6->expr_typetag);
-        encode_expression($2);
-        b_deref($2->expr_typetag);
+        if ($2->expr_typetag == TYUNSIGNEDCHAR || $2->expr_typetag == TYSIGNEDCHAR)
+        {
+          b_convert($6->expr_typetag, TYSIGNEDLONGINT);
+        }
         
         if ($5 == FOR_TO)
         {
@@ -846,12 +869,13 @@ for_statement:
     {
         control_labels lbls = $<y_control>8;
         
+        b_duplicate(TYSIGNEDLONGINT);
+        
         encode_expression($2);
         
-        B_INC_DEC_OP idop = ($5 == FOR_TO) ? B_POST_INC : B_POST_DEC;
+        B_INC_DEC_OP idop = ($5 == FOR_TO) ? B_PRE_INC : B_PRE_DEC;
         
         b_inc_dec($2->expr_typetag, idop, 0);
-        b_pop();
         
         b_jump(lbls.conditional_label);
         b_label(lbls.after_label);
@@ -1013,7 +1037,7 @@ static_expression:
   ;
 
 boolean_expression:
-    expression
+    expression { if ($1->expr_typetag != TYSIGNEDCHAR) { error("Non-Boolean expression"); } $$ = $1; }
   ;
 
 expression:

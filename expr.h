@@ -43,7 +43,7 @@
  *     E_CAST       - Inserted to cast types prior to operation.
  */
 typedef enum {E_ASSIGN, E_ARITH, E_SIGN, E_COMPR, E_UNFUNC, 
-              E_INTCONST, E_REALCONST, E_CHARCONST, E_BOOLCONST, E_PTR,
+              E_INTCONST, E_REALCONST, E_CHARCONST, E_BOOLCONST, E_SUBRANGE,
               E_VAR, E_FUNC, E_ARRAY, E_CAST} EXPRTAG; 
 
 /* typedef enum ARITHTAG
@@ -175,6 +175,8 @@ EXPR new_expr_identifier(ST_ID id);
 EXPR new_expr_var_funccall(EXPR base, EXPR_LIST arguments);
 
 EXPR new_expr_array(EXPR base, EXPR_LIST indices);
+
+EXPR new_expr_subrange(EXPR low, EXPR high);
 
 /* Create a new list of expression nodes */
 EXPR_LIST new_expr_list(EXPR item);
