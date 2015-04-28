@@ -46,16 +46,6 @@ int debug = 0; //set to 1 for debug messages
 
 TYPETAG case_expr_type = TYVOID;
 
-typedef struct case_list
-{
-  BOOLEAN is_subrange;
-  double value_or_low;
-  double high;
-  
-  struct case_list *next, *prev;
-} 
-case_list_node, *CASE_LIST;
-
 /* New assignment expression */
 EXPR new_expr_assign(EXPR left, EXPR right) 
 {
