@@ -729,7 +729,13 @@ if_statement:
 case_statement:
     LEX_CASE expression LEX_OF {
       char *end_label = new_symbol();
+      if (!isOrdinalType($2->expr_typetag))
+      {
+        error("Case expression is not of ordinal type");
+      }
+      
       EXPR expr = parse_expr_for_case($2);
+      
       encode_expression(expr);
       $<y_string>$ = end_label;      
     } case_element_list optional_semicolon_or_else_branch LEX_END {
@@ -759,6 +765,11 @@ case_element:
     	while(list != NULL)
     	{
     		EXPR expr = list->base;
+    		if (!isOrdinalType(expr->expr_typetag))
+    		{
+    		  error("Case constant has non-ordinal type");
+    		}
+    		
     		if (expr->expr_tag == E_SUBRANGE)
     		{
     		  char* next_dispatch = new_symbol();
@@ -824,9 +835,17 @@ for_statement:
         char *for_cond_label = new_symbol();
         store_label(for_exit_label);
         
-        if (!isOrdinalType($2->expr_typetag) || !isOrdinalType($4->expr_typetag) || !isOrdinalType($6->expr_typetag))
+        if (!isOrdinalType($2->expr_typetag))
         {
-          error("For statement requires ordinal type bounds");
+          error("For-loop control variable not of ordinal type");
+        }
+        else if ($2->expr_typetag != $4->expr_typetag || $2->expr_typetag != $6->expr_typetag || $4->expr_typetag != $6->expr_typetag)
+        {
+          error("Type mismatch in for-loop control");
+        }
+        else if (!isOrdinalType($4->expr_typetag) || !isOrdinalType($6->expr_typetag))
+        {
+          error("For-loop control variable not of ordinal type");
         }
         
         encode_expression($6);
