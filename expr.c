@@ -786,8 +786,6 @@ BOOLEAN check_subrange(int lo, int hi)
     for (index = 0; index < list_size; index++)
     {
         int constant = case_lists[currentBlock][index];
-        
-        msg("Checking %d against %d - %d.", constant, lo, hi);
 
         if (constant >= lo && constant <= hi)
         {
@@ -806,8 +804,6 @@ BOOLEAN check_constant(int i)
     for (index = 0; index < list_size; index++)
     {
         int constant = case_lists[currentBlock][index];
-        
-        msg("Checking %d against %d", constant, i);
 
         if (constant == i)
         {
@@ -829,7 +825,7 @@ void add_subrange(int lo, int hi)
         case_lists[currentBlock][list_size+index] = lo+index;
     }
     
-    list_size += size_to_add;
+    list_sizes[currentBlock] += size_to_add;
 }
 
 void add_constant(int i)
@@ -838,7 +834,7 @@ void add_constant(int i)
     
     case_lists[currentBlock][list_size] = i;
     
-    list_size++;
+    list_sizes[currentBlock]++;
 }
 
 void exit_case_block()
