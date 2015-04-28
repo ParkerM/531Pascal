@@ -787,6 +787,8 @@ BOOLEAN check_subrange(int lo, int hi)
     {
         int constant = case_lists[currentBlock][index];
         
+        msg("Checking %d against %d - %d.", constant, lo, hi);
+
         if (constant >= lo && constant <= hi)
         {
             return FALSE;
@@ -805,6 +807,8 @@ BOOLEAN check_constant(int i)
     {
         int constant = case_lists[currentBlock][index];
         
+        msg("Checking %d against %d", constant, i);
+
         if (constant == i)
         {
             return FALSE;
