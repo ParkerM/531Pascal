@@ -761,21 +761,21 @@ case_element:
     case_constant_list {
     	char *end_label = new_symbol();
     	char *statement_label = new_symbol();
+    	
     	EXPR_LIST list = $1;
     	while(list != NULL)
     	{
     		EXPR expr = list->base;
-    		if (!isOrdinalType(expr->expr_typetag))
+    		if (!isCaseableType(expr->expr_typetag))
     		{
-    		  error("Case constant has non-ordinal type");
+    		  // Do nothing
     		}
-    		
-    		if (expr->expr_tag == E_SUBRANGE)
+    		else if (expr->expr_tag == E_SUBRANGE)
     		{
     		  char* next_dispatch = new_symbol();
-    		  b_dispatch(B_LT, TYSIGNEDLONGINT, get_expr_constant(expr->left), next_dispatch, FALSE);
-    		  b_dispatch(B_LE, TYSIGNEDLONGINT, get_expr_constant(expr->right), statement_label, TRUE);
-    		  b_label(next_dispatch);
+  		    b_dispatch(B_LT, TYSIGNEDLONGINT, get_expr_constant(expr->left), next_dispatch, FALSE);
+  		    b_dispatch(B_LE, TYSIGNEDLONGINT, get_expr_constant(expr->right), statement_label, TRUE);
+  		    b_label(next_dispatch);
     		}
     		else
     		{
@@ -783,6 +783,7 @@ case_element:
     		}
     		list = list->next;
     	}
+    	
     	b_jump(end_label);
     	b_label(statement_label);
     	$<y_string>$ = end_label;

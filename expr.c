@@ -44,6 +44,18 @@ CASTTAG get_cast_constant(TYPETAG from, TYPETAG to);
 
 int debug = 0; //set to 1 for debug messages
 
+TYPETAG case_expr_type = TYVOID;
+
+typedef struct case_list
+{
+  BOOLEAN is_subrange;
+  double value_or_low;
+  double high;
+  
+  struct case_list *next, *prev;
+} 
+case_list_node, *CASE_LIST;
+
 /* New assignment expression */
 EXPR new_expr_assign(EXPR left, EXPR right) 
 {
@@ -634,6 +646,8 @@ CASTTAG get_cast_constant(TYPETAG from, TYPETAG to)
 
 EXPR parse_expr_for_case(EXPR expr)
 {
+	case_expr_type = expr->expr_typetag;
+	
 	EXPR result = expr;
 	if(expr->expr_tag == E_VAR)
 	{
@@ -643,13 +657,14 @@ EXPR parse_expr_for_case(EXPR expr)
 	if(expr->expr_typetag == TYCHAR)
 	{
 		result = new_expr_cast(CT_CHAR_INT, result);
-	} 
+	}
 	
 	return result;
 }
 
 double get_expr_constant(EXPR expr)
 {
+  
 	if(expr == NULL)
 	{
 		return 0;
@@ -726,4 +741,21 @@ double get_expr_constant(EXPR expr)
 		}
 		break;
 	}	
+}
+
+BOOLEAN isCaseableType(TYPETAG type)
+{
+  if (!isOrdinalType(type))
+  {
+    error("Case constant has non-ordinal type");
+    return FALSE;
+  }
+  else if (type != case_expr_type)
+  {
+    error("Case constant type does not match case expression type");
+    return FALSE;
+  }
+  
+  return TRUE;
+  
 }

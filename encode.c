@@ -532,7 +532,7 @@ void encode_array(EXPR expr)
     
     if (idx_size != expr_size)
     {
-      error("Expected %d indices; received %d", idx_size, expr_size);
+      error("Wrong number of indices in array access", idx_size, expr_size);
       return;
     }
     
