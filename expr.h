@@ -188,4 +188,12 @@ double get_expr_constant(EXPR expr);
 
 EXPR parse_expr_for_case(EXPR expr);
 
+void enter_case_block();
+void exit_case_block();
+
+BOOLEAN check_subrange(int lo, int hi);
+BOOLEAN check_constant(int i);
+
+void add_subrange(int lo, int hi);
+void add_constant(int i);
 #endif

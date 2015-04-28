@@ -734,6 +734,7 @@ case_statement:
         error("Case expression is not of ordinal type");
       }
       
+      enter_case_block();
       EXPR expr = parse_expr_for_case($2);
       
       encode_expression(expr);
@@ -743,6 +744,7 @@ case_statement:
     	{
       	b_pop();
       }
+      exit_case_block();
       b_label($<y_string>4);
     }
   ;
@@ -768,18 +770,40 @@ case_element:
     		EXPR expr = list->base;
     		if (!isCaseableType(expr->expr_typetag))
     		{
-    		  // Do nothing
+    		  // Do nothing -- error reporting done by isCaseableType().
     		}
     		else if (expr->expr_tag == E_SUBRANGE)
     		{
-    		  char* next_dispatch = new_symbol();
-  		    b_dispatch(B_LT, TYSIGNEDLONGINT, get_expr_constant(expr->left), next_dispatch, FALSE);
-  		    b_dispatch(B_LE, TYSIGNEDLONGINT, get_expr_constant(expr->right), statement_label, TRUE);
-  		    b_label(next_dispatch);
+    			int lo = (int)get_expr_constant(expr->left);
+    			int hi = (int)get_expr_constant(expr->right);
+    			
+    			if (check_subrange(lo, hi))
+    			{
+    				add_subrange(lo, hi);
+    				
+		  		  char* next_dispatch = new_symbol();
+				    b_dispatch(B_LT, TYSIGNEDLONGINT, lo, next_dispatch, FALSE);
+				    b_dispatch(B_LE, TYSIGNEDLONGINT, hi, statement_label, TRUE);
+				    b_label(next_dispatch);
+				  }
+				  else
+				  {
+				  	error("Overlapping constants in case statement");
+				  }
     		}
     		else
     		{
-    		  b_dispatch(B_EQ, TYSIGNEDLONGINT, get_expr_constant(expr), statement_label, TRUE);
+    			int i = (int)get_expr_constant(expr);
+    			
+    			if (check_constant(i))
+    			{
+    				add_constant(i);
+    		  	b_dispatch(B_EQ, TYSIGNEDLONGINT, i, statement_label, TRUE);
+    		  }
+    		  else
+    		  {
+    		  	error("Overlapping constants in case statement");
+    		  }
     		}
     		list = list->next;
     	}

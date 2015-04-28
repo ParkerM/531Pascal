@@ -749,3 +749,95 @@ BOOLEAN isCaseableType(TYPETAG type)
   return TRUE;
   
 }
+
+#define NO_VALUE -1000000
+#define MAX_BLOCKS 64
+#define MAX_CONSTS 1024
+int case_lists[MAX_BLOCKS][MAX_CONSTS];
+int list_sizes[MAX_BLOCKS];
+
+int currentBlock = -1;
+
+void enter_case_block()
+{
+    currentBlock++;
+    
+    if (currentBlock > MAX_BLOCKS)
+    {
+        error("You have too many nested case statements");
+        currentBlock = 0;
+    }
+    
+    int index;
+    
+    for (index = 0; index < MAX_CONSTS; index++)
+    {
+        case_lists[currentBlock][index] = NO_VALUE;
+    }
+    
+    list_sizes[currentBlock] = 0;
+}
+
+BOOLEAN check_subrange(int lo, int hi)
+{
+    int index;
+    int list_size = list_sizes[currentBlock];
+    
+    for (index = 0; index < list_size; index++)
+    {
+        int constant = case_lists[currentBlock][index];
+        
+        if (constant >= lo && constant <= hi)
+        {
+            return FALSE;
+        }
+    }
+    
+    return TRUE;
+}
+
+BOOLEAN check_constant(int i)
+{
+    int index;
+    int list_size = list_sizes[currentBlock];
+    
+    for (index = 0; index < list_size; index++)
+    {
+        int constant = case_lists[currentBlock][index];
+        
+        if (constant == i)
+        {
+            return FALSE;
+        }
+    }
+    
+    return TRUE;
+}
+
+void add_subrange(int lo, int hi)
+{
+    int index;
+    int list_size = list_sizes[currentBlock];
+    int size_to_add = hi-lo+1;
+    
+    for (index = 0; index < size_to_add; index++)
+    {
+        case_lists[currentBlock][list_size+index] = lo+index;
+    }
+    
+    list_size += size_to_add;
+}
+
+void add_constant(int i)
+{
+    int list_size = list_sizes[currentBlock];
+    
+    case_lists[currentBlock][list_size] = i;
+    
+    list_size++;
+}
+
+void exit_case_block()
+{
+    currentBlock--;
+}
